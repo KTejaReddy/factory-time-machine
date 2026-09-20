@@ -31,28 +31,41 @@ os.environ["AI_API_KEY"] = ""
 
 @pytest.fixture(autouse=True)
 def workspace_rows_do_not_leak():
-    """No test may leave a case file behind in the real workspace.
+    """No test may leave the real workspace as it did not find it.
 
     The upload tests drive the real ``POST /api/upload/`` endpoint, and that
-    endpoint registers a dataset row in the database. Popping the key out of the
-    in-process catalog was not enough: running the suite added case files named
-    after the fixtures (``user:machine_shift_export``, ``user:temporary_probe``)
-    to the developer's dataset history, where they showed up as "source file
-    missing" and looked like a bug in the product rather than in the tests.
+    endpoint registers a case file in the database and then rebuilds the catalog
+    against whatever upload directory is patched in. Popping the key out of the
+    in-process catalog was not enough. Two things leaked into the developer's
+    workspace:
 
-    Anything created during a test is deleted together with the artifacts saved
-    against it. Pre-existing rows are never touched.
+    * rows *created* by a test (``user:machine_shift_export``,
+      ``user:temporary_probe``) stayed in the dataset history, listed as "source
+      file missing" - a bookkeeping artefact that reads like a product bug;
+    * rows *modified* by a test (a build against an empty patched directory
+      flagged the real datasets as missing) kept the wrong presence flag.
+
+    So the fixture restores the exact state of every pre-existing row and deletes
+    everything the test created, together with the artifacts saved against it.
     """
     from sqlalchemy import delete, select
 
-    from app.db import AnalysisRun, DatasetRecord, FeedbackItem, RateCardEntry, ScenarioRun, session
+    from app.db import AnalysisRun, DatasetRecord, FeedbackItem, RateCardEntry, ScenarioRun, session, utcnow
 
+    fields = ("name", "kind", "source_file", "uploaded_at", "status", "rows", "columns", "profile", "capabilities", "present")
     with session() as db:
-        before = {row.key for row in db.execute(select(DatasetRecord)).scalars()}
+        before = {
+            row.key: {field: getattr(row, field) for field in fields}
+            for row in db.execute(select(DatasetRecord)).scalars()
+        }
     yield
     with session() as db:
-        created = [row for row in db.execute(select(DatasetRecord)).scalars() if row.key not in before]
-        for row in created:
+        for row in db.execute(select(DatasetRecord)).scalars():
+            if row.key in before:
+                for field, value in before[row.key].items():
+                    setattr(row, field, value)
+                row.updated_at = utcnow()
+                continue
             for model in (AnalysisRun, RateCardEntry, FeedbackItem, ScenarioRun):
                 db.execute(delete(model).where(model.dataset_key == row.key))
             db.delete(row)

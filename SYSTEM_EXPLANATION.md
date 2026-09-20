@@ -16,6 +16,10 @@ Companion documents:
 | `FUNCTION_REFERENCE.md` | Function-by-function walkthrough of the source |
 | `API_REFERENCE.md` | Every HTTP endpoint |
 | `DATASET_SCHEMA.md` | Exact measured column/row/null figures |
+| `DATASET_GUIDE.md` | How to prepare your own CSV, column by column |
+| `MULTI_DATASET_ARCHITECTURE.md` | Case files: one per dataset, and how they stay separate |
+| `REPAIR_ANALYSIS.md` | Interventions, where the rates come from, cheapest supported effective repair |
+| `FINAL_REPORT_FORMAT.md` | What the downloadable report contains |
 | `EXTERNAL_IMAGE_TEST_REPORT.md` | What happened when the model met unfamiliar images |
 | `TEST_REPORT.md` | What was tested and what passed |
 | `SECURITY_AUDIT.md` | Secret handling, input safety, AI safety |
@@ -325,24 +329,61 @@ to retrain or recalibrate anything, and the API response says so verbatim
 (`model_retrained: false`). Feedback exists for audit and for a future supervised retraining
 pipeline. Claiming otherwise would be false.
 
-## 15. What the user sees
+## 15. How every dataset gets its own case file
 
 ```
+USER UPLOADS A CSV
+        ↓
+  profiler (what is in this file?)   →   capability map (what could it support?)   →   NEW CASE FILE
+        ↓                                                                                  ↓
+  RUN ANALYSIS: quality · process anomalies · production constraint · forensic finding ·
+                propagation · economics · repairs · AI finding
+        ↓
+  SAVED against this dataset  →  AI answer  →  repair ranking  →  report (MD / CSV / JSON)
+
+DATASET A → case A        DATASET B → case B        (uploading B never overwrites A)
+```
+
+Every dataset — the three supplied simulation exports, the image archive, and each CSV you
+upload — gets one **case file**: a stable id (`ds-factory-batch-a`), an upload date, a status, a
+profile, a capability map, and its own saved analysis, rate card, repair ranking, scenario
+history, AI finding, engineer feedback and downloadable report. A second upload creates a second
+case file; the header selector switches the active dataset and every page re-fetches against it,
+so two datasets can show two different bottlenecks, two different cost situations and two
+different AI answers without ever mixing them.
+
+The three documents that describe this layer in detail:
+
+| Document | Read it for |
+|---|---|
+| `MULTI_DATASET_ARCHITECTURE.md` | the case-file model, the database schema, the isolation rules, switching and persistence |
+| `REPAIR_ANALYSIS.md` | which interventions a dataset supports, where each rate comes from, and how the cheapest supported effective repair is chosen |
+| `FINAL_REPORT_FORMAT.md` | what the downloadable report contains, per format, and how it stays traceable to one dataset |
+
+Uploading your own file is described for the data-preparation side in `DATASET_GUIDE.md`.
+
+## 16. What the user sees
+
+```
+📂 Datasets        every case file with its status and saved history (+ schema and quality)
 🏠 Overview        status light, one plain-language finding, one next step
 👁️ Inspect         pick a factory image  ──┐
                     or upload / generate an external test image (never training data)
 🔎 Investigate     pick a problem → first divergence → evidence → limitations → review
 🏭 Production      what is happening: throughput, WIP, utilisation, ranked bottleneck
 🕸️ Problem Flow    click through the propagation graph node by node
+💰 Economics       what it costs, with the rate each figure used — or the rate card to supply
+🔧 Repairs         what can be changed, what it is worth, and the cheapest supported effective repair
 🧪 What-If         change a capacity or a processing time, see current vs simulated + validation
 💬 AI Help         ask a question; the backend assembles the evidence, the AI phrases it
 👨‍🔧 Review          every stored decision, with the payload it was made on
+📄 Reports         download the final analysis (Markdown / CSV / JSON)
 ```
 
 Every technical term is available as a plain-language tooltip, and every page has a
 **"How this was calculated"** block naming the actual algorithm.
 
-## 16. The whole project as one story
+## 17. The whole project as one story
 
 ```
 A product image has a defect

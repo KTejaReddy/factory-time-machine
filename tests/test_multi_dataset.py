@@ -179,6 +179,32 @@ def test_analysis_results_stay_with_their_dataset(two_datasets, catalog):
     assert workspace.latest_analysis(A_KEY)["id"] != workspace.latest_analysis(B_KEY)["id"]
 
 
+def test_the_summary_card_reports_this_datasets_own_capabilities(two_datasets, catalog):
+    """The Overview reads the summary card, so it must carry the real answers.
+
+    It previously read a ``sections`` field the endpoint never returned, which made
+    a supported feature render as "not supported by this dataset" on the landing page.
+    """
+    analysis_service.run_analysis(catalog, A_KEY, rate_card=RATES, include_ai=False)
+    analysis_service.run_analysis(catalog, B_KEY, rate_card=None, include_ai=False)
+    client = TestClient(app)
+
+    for key, economics_on in ((A_KEY, True), (B_KEY, False)):
+        body = client.get(f"/api/workspace/summary?key={key}").json()
+        assert body["status"] == "complete"
+        highlights = body["highlights"]
+        assert highlights["quality"]["rows"] == A_ROWS
+        assert highlights["process"]["available"] is True, "both datasets support anomaly scoring"
+        assert highlights["process"]["anomalous_fraction"] is not None
+        assert highlights["production"]["available"] is True
+        assert highlights["production"]["bottleneck"]["label"] == ("Assembly" if economics_on else "Press 2")
+        assert highlights["economics"]["available"] is economics_on
+        if not economics_on:
+            # An unavailable card must say why, or the page shows a bare "rate card required".
+            assert highlights["economics"]["reason"]
+            assert "rate" in highlights["economics"]["reason"]
+
+
 def test_scenario_history_is_filtered_by_dataset(two_datasets):
     client = TestClient(app)
     for key, name in ((A_KEY, "A scenario"), (B_KEY, "B scenario")):

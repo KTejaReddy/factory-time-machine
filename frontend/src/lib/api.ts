@@ -173,6 +173,13 @@ export interface AnalysisSummaryCard {
   confidence?: { score?: number; basis?: string[] };
   formats?: Array<{ format: string; label: string; url: string }>;
   limitations?: string[];
+  /** The saved run's four headline cards, so the Overview never guesses. */
+  highlights?: {
+    quality?: { rows?: number | null; missing_cells?: number | null; duplicate_rows?: number | null };
+    process?: { available?: boolean; anomalous_fraction?: number | null; reason?: string | null };
+    production?: { available?: boolean; bottleneck?: { label?: string; utilisation?: number | null } | null; reason?: string | null };
+    economics?: { available?: boolean; reason?: string | null };
+  };
 }
 
 export interface RepairCandidate {

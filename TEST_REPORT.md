@@ -14,12 +14,13 @@ bundle too.
 
 | Suite | Command | Result |
 |---|---|---|
-| Unit / contract tests | `python -m pytest tests -q` | **100 passed, 0 failed** (35 s) |
+| Unit / contract tests | `python -m pytest tests -q` | **125 passed, 0 failed** (178 s) |
 | Live API smoke test | `python scripts/smoke_test_api.py --base http://127.0.0.1:8001` | **151 assertions passed, 0 failed** |
 | Frontend typecheck | `cd frontend && npm run typecheck` (`tsc -b --noEmit`) | **clean** |
 | Frontend production build | `cd frontend && npm run build` | **built** (`dist/assets/index-*.js`, 815 kB / 242 kB gzip) |
-| Browser walkthrough | Preview tab against the Vite dev server | **all 8 routes render real data, console clean** |
-| Dataset upload through the UI | Datasets page → *Upload & profile* | **profiled, listed, capability map shown** |
+| Browser walkthrough | Preview tab against the Vite dev server | **all 13 routes render real data, console clean** |
+| Dataset upload through the UI | Dashboard → *Upload Dataset* | **profiled, new case file created, switched to it, DATASET READY card shown** |
+| Multi-dataset acceptance run | A → analyse → upload B → analyse → switch back to A → reload → AI on both → report on both | **passes end to end (§3.1)** |
 
 Test files:
 
@@ -33,6 +34,7 @@ Test files:
 | `tests/test_api_hardening.py` | 3 | CORS configuration, 500 handler leaks no internals |
 | `tests/test_upload_flow.py` | 9 | Dataset upload: basename sanitisation, size cap, parse rejection, profiler detection, capability map shape, catalog rebuild, deleted upload disappears |
 | `tests/test_contract_shapes.py` | 9 | Payload contracts the UI depends on: numpy-safe JSON, status stages, documented/undocumented columns, case `confidence_basis`, vision localisation disclosure, per-change adjustable map, anomaly driver fields |
+| `tests/test_multi_dataset.py` | 18 | The case-file layer: one registry record per dataset; two uploads keep separate analysis, rate cards, scenarios, feedback and reports (A's bottleneck is Assembly, B's is Press 2); reports contain only their own dataset; deleting a source keeps the saved history; the same AI question on two datasets cannot reuse the other's evidence; a wrongly flagged dataset recovers on read; repair pricing is never invented and the cheapest supported effective repair needs both a valued effect and a priced intervention |
 
 The suites are hermetic: `tests/conftest.py` forces `AI_DISABLE=true` and an empty
 key before `app.config` is imported, so no test touches the network and none depends
@@ -200,7 +202,8 @@ which is what makes "console is clean" a usable check.
   the scores so importance reuses it; and the finished report is memoised on the catalog
   (`analysis_cache`, cleared on every build).
 * **Verification.** 68 s → 3.5 s cold, 0.000 s warm. The whole test suite dropped from
-  74 s to 36 s as a side effect.
+  74 s to 36 s as a side effect (today's 178 s is the same suite with 25 more cases, 18 of
+  which rebuild the catalog twice around an isolated upload directory).
 
 ### 2.19 `/api/datasets/model3/quality` recomputed a 4 s scan on every visit — **fixed**
 
@@ -290,6 +293,70 @@ input in the browser, not just by curl). What this had to fix:
 
 ---
 
+### 2.26 The suite pollutes the developer's workspace — **fixed**
+
+Running the full suite added case files named after the test fixtures
+(`user:machine_shift_export`, `user:temporary_probe`) to the real dataset history, where they
+showed up as "Source file missing", and — worse — the tests that build the catalog against an
+empty temporary upload directory left the *real* datasets flagged `file_missing` too, so a
+healthy dataset looked deleted. The upload tests drive the real endpoint, so the rows are real.
+Fixed with an autouse fixture in `tests/conftest.py` that snapshots every pre-existing
+case-file row (present, status, rows, columns, profile, capabilities, name, kind, source file,
+upload time), restores it afterwards, and deletes anything the test created together with its
+artifacts. Verified by running the suite and diffing the registry before and after: unchanged.
+
+### 2.27 A dataset that is on disk but not loaded was called "deleted" — **fixed**
+
+`sync_registry` set `present = false` whenever a key was absent from that build's summaries.
+Absent from a build also means "this build did not load the file", so a case file could be
+flagged `file_missing` for the life of the database while its CSV sat in `data/user_datasets/`
+— and the header then told the user their dataset was gone. Fixed by (a) requiring the file to
+be genuinely missing before flipping the flag, (b) labelling a file that exists but is not
+loaded as `Waiting for catalog rebuild`, and (c) reconciling the flag against the filesystem on
+every history read, so a wrong flag self-heals on the next page load instead of needing a
+restart. Pinned by `test_a_wrongly_flagged_dataset_recovers_without_a_restart` and
+`test_a_file_that_is_not_loaded_is_not_reported_as_deleted`.
+
+### 2.28 An uploaded dataset's AI narrative quoted the supplied archives — **fixed**
+
+Dataset A's report contained "36,000 missing cells (model1), 37 missing cells (model3) …
+constant Time_Now = 24 in model3 rows" — findings the user's own CSV never produced. The AI
+evidence bundle was assembled from global catalog state (every dataset's issues, the whole models
+list, the image/simulation linkage, three hardcoded limitations that were false for an upload
+with cost columns). It is now scoped to one dataset. Verified: dataset A's evidence and its
+regenerated report contain no `model1`/`model2`/`model3`/`Time_Now` token (0 lines, was 1), and
+model1's evidence no longer carries model3's row counts. Pinned by
+`test_ai_evidence_never_quotes_another_dataset`.
+
+### 2.29 A supported feature was labelled "not supported by this dataset" — **fixed**
+
+The Overview's Process card read `summary.sections…`, a field the summary endpoint never
+returned, so the check was always falsy: the card said "not supported by this dataset" for a
+dataset whose anomaly analysis had just run, and the Economics card always said "rate card
+required". The summary endpoint now returns a compact `highlights` block derived from the saved
+run (quality counts, process availability + anomalous fraction + reason, production bottleneck,
+economics availability + reason), and the Dashboard renders it. Verified live: A shows
+"0.56 % of scored rows beyond the threshold", "Assembly (utilisation 94.2 %)", "computed";
+B shows the economics reason instead of a zero.
+
+### 2.30 Utilisation was reported 100× too large — **fixed**
+
+Dataset B's Production page said Press 2 was "9094.7 %" busy: a plant export writes `util_pct`
+as 91.0 and the bottleneck reader took the column mean as a fraction. `utilisation_fraction()`
+now resolves the unit from the column name and the magnitude, returns the assumption with the
+number (`utilization_note`) and keeps the raw mean as `utilization_raw_mean`. Verified: Press 2
+reads 0.9095, Press 1 0.5506, Press 3 0.4791, each with its note; dataset A's fraction-valued
+`station_util` is unaffected.
+
+### 2.31 The propagation endpoint could 500 on an empty route — **fixed**
+
+`GET /api/diagnostics/propagation` raised `IndexError: list index out of range` at `route[0]`
+(three entries in the backend error log) when a documented model resolved to no stations. The
+route is now checked before it is indexed and an empty graph with "No propagation path can be
+established from the available data." is returned. Verified across all five keys.
+
+---
+
 ## 3. Workflow verification (live, in the browser)
 
 Session of 2026-09-20, backend on 8001, Vite on 5173, all figures read from the running app.
@@ -311,6 +378,26 @@ Session of 2026-09-20, backend on 8001, Vite on 5173, all figures read from the 
 | Dataset with missing capabilities | a 3-column notes CSV lists all six features as unavailable with reasons; no crash, no zeros, nothing invented |
 | Console | no application errors on any route; only Vite connect messages |
 | Backend log | no unhandled 500s; only expected 4xx from deliberate negative probes |
+
+### 3.1 Multi-dataset acceptance run (later session, same day)
+
+Dataset A (`factory_batch_a.csv`, 720 × 11) was already in the workspace; Dataset B
+(`factory_batch_b.csv`, 720 × 9) was uploaded **through the page's own file input** during this
+run.
+
+| Step | Result |
+|---|---|
+| Upload B in the browser | "DATASET READY — Uploaded dataset: factory_batch_b / ds-factory-batch-b / 720 rows × 9 columns · 1 station field, 4 process columns, 1 cost column" + capability chips + *Start analysis* |
+| B's analysis | stored as its own run in 3.4 s; analysis-complete card: main issue `station:Press 2`, repair "No supported repair yet", impact reason, confidence 80 %, three download links |
+| B's pages | Overview (`Press 2` 90.9 %), Production, Repairs (rate card required + the reason), Economics (rate-card form), AI, Review, Reports all render for B; What-If offered as *unavailable* with its reason |
+| A after switching back | 3 saved analyses, rate card stored, Assembly 94.2 %, "Cut downtime by 20 %" — no B token anywhere beyond the switcher list |
+| Reload the browser | both datasets still present, active dataset still A, A's analysis-complete card re-populated from the store |
+| Dataset history | 6 case files: A (3 analyses, rate card), B (1 analysis), model1/2/3, image archive |
+| Same AI question on A and B | A: "high utilization at the Assembly station (94.2 % … 6.16 % headroom)"; B: "bottleneck at Press 2 … 90.95 % utilization with a mean queue of 48.61 parts and only about 9.95 % headroom" — different narratives, neither mentions the other dataset, each grounded on its own `subject_id` |
+| Report A vs report B | A's report mentions only A (Assembly, `ds-factory-batch-a`, `factory_batch_a`); B's mentions only B (Press 2, `ds-factory-batch-b`, `factory_batch_b`); both carry the traceability header and the analysis-run id |
+| Report formats | MD 8,281 B / CSV 48,280 B / JSON 38,239 B for A, each served as an attachment named `report-<dataset id>-<timestamp>.<ext>` |
+| Re-running A's analysis | new run stored; the regenerated report contains no supplied-archive tokens (0 lines, was 1) |
+| Console / backend log | no application errors, no unhandled exceptions |
 
 ---
 

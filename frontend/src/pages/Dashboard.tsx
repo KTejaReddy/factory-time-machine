@@ -88,7 +88,10 @@ export default function Dashboard() {
   const snap = production.data;
   const top = snap?.bottleneck_candidates?.[0];
   const topAnomaly = anomalies.data?.top?.[0];
-  const sections = summary?.status === "complete" ? (summary as any).sections : null;
+  // The saved run's own headline cards. Reading them from the summary keeps the
+  // Overview honest: a supported feature is never labelled "not supported", and a
+  // disabled one carries the reason the backend recorded.
+  const highlights = summary?.status === "complete" ? summary.highlights : undefined;
   const ready = summary?.status === "complete";
 
   return (
@@ -233,29 +236,43 @@ export default function Dashboard() {
             {ready ? (
               <div className="grid gap-4 sm:grid-cols-2">
                 <Card title="Quality" actions={<Badge tone="muted">dataset</Badge>}>
-                  <p className="text-[13px] leading-snug text-[var(--color-ink-dim)]">{sections?.quality?.rows !== undefined ? `${int(sections.quality.rows)} rows · ${int(sections.quality.missing_cells)} missing cells · ${int(sections.quality.duplicate_rows)} duplicates` : summary?.main_issue}</p>
+                  <p className="text-[13px] leading-snug text-[var(--color-ink-dim)]">{highlights?.quality?.rows != null ? `${int(highlights.quality.rows)} rows · ${int(highlights.quality.missing_cells)} missing cells · ${int(highlights.quality.duplicate_rows)} duplicates` : summary?.main_issue}</p>
                   <p className="mt-2 text-[12px] leading-snug text-[var(--color-ink-dim)]">{summary?.main_issue}</p>
                 </Card>
-                <Card title="Process" actions={<Badge tone="muted">anomaly model</Badge>}>
-                  <p className="text-[13px] leading-snug text-[var(--color-ink-dim)]">{(summary as any)?.sections?.anomaly?.available ? `${pct(((summary as any).sections.anomaly.anomalous_fraction ?? 0) * 100, 2)} of scored rows beyond the threshold` : "not supported by this dataset"}</p>
+                <Card title="Process" actions={<Badge tone={highlights?.process?.available ? "ok" : "warn"}>anomaly model</Badge>}>
+                  <p className="text-[13px] leading-snug text-[var(--color-ink-dim)]">
+                    {highlights?.process?.available
+                      ? `${pct((highlights.process.anomalous_fraction ?? 0) * 100, 2)} of scored rows beyond the threshold`
+                      : highlights?.process?.reason ?? "not supported by this dataset"}
+                  </p>
                   <Link className="btn mt-3 text-[12px]" to="/forensic">
                     Investigate
                   </Link>
                 </Card>
-                <Card title="Production" actions={<Badge tone="warn">constraint</Badge>}>
+                <Card title="Production" actions={<Badge tone={highlights?.production?.available ? "ok" : "warn"}>constraint</Badge>}>
                   <p className="text-[13px] leading-snug text-[var(--color-ink-dim)]">
-                    {sections?.production?.bottleneck?.label
-                      ? `${sections.production.bottleneck.label} (utilisation ${(sections.production.bottleneck.utilisation ?? 0).toFixed(3)})`
+                    {highlights?.production?.bottleneck?.label
+                      ? `${highlights.production.bottleneck.label} (utilisation ${pct((highlights.production.bottleneck.utilisation ?? 0) * 100, 1)})`
                       : top?.label
                       ? `${top.label} (utilisation ${pct((top.utilization ?? 0) * 100, 1)})`
-                      : sections?.production?.reason ?? "—"}
+                      : highlights?.production?.reason ?? "—"}
                   </p>
                   <Link className="btn mt-3 text-[12px]" to="/production">
                     View Production
                   </Link>
                 </Card>
-                <Card title="Economics & repairs" actions={<Badge tone={sections?.economics?.available ? "ok" : "warn"}>{sections?.economics?.available ? "computed" : "rate card required"}</Badge>}>
+                <Card
+                  title="Economics & repairs"
+                  actions={
+                    <Badge tone={highlights?.economics?.available ? "ok" : "warn"}>
+                      {highlights?.economics?.available ? "computed" : "rate card required"}
+                    </Badge>
+                  }
+                >
                   <p className="text-[13px] leading-snug text-[var(--color-ink-dim)]">{summary?.repair ?? "No supported repair yet."}</p>
+                  {!highlights?.economics?.available && highlights?.economics?.reason ? (
+                    <p className="mt-2 text-[12px] leading-snug text-[var(--color-ink-dim)]">{highlights.economics.reason}</p>
+                  ) : null}
                   <div className="mt-3 flex gap-2">
                     <Link className="btn text-[12px]" to="/repairs">
                       Repairs

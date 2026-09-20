@@ -8,24 +8,33 @@ It answers a question a defect classifier cannot:
 > propagate, what did it cost, and what happens if we change it?"*
 
 It ships with a documented plant — three discrete-event simulation exports and a
-12,000-image defect archive — and those power the analyses. You can also add your own CSV:
+12,000-image defect archive — and you can also add your own CSV. **Every dataset gets its own
+case file**, and uploading a second one never replaces the first:
 
 ```
-Upload Dataset  →  Profiler (what is in this file?)  →  Capability Map (what could it support?)  →  Catalog
-                                                                              ↓
-                       Supplied archives  →  Inspection · Anomaly · Forensics · Propagation · Bottleneck · What-If · Economics
+Upload Dataset  →  Profiler (what is in this file?)  →  Capability Map  →  NEW CASE FILE
+                                                                                 ↓
+                  Run analysis → Anomaly · Forensics · Propagation · Bottleneck ·
+                                 Economics · Repairs · What-If · AI finding
+                                                                                 ↓
+                  Saved per dataset → Report (MD / CSV / JSON) → Download
+
+DATASET A → case A        DATASET B → case B        (both stay openable, forever separate)
 ```
 
-Uploaded datasets are **profiled, not analysed**: the profiler detects their stations, process
-variables, cost fields and batch identifiers, and the capability map states which analyses the
-file could support and why the rest are off. The calibrated engines (the discrete-event
-re-simulation, the bottleneck weights, the utilisation identity) are tied to the supplied Model 3
-export, and the capability map says so instead of pretending otherwise. Every recommendation,
+An uploaded dataset is **analysed, not just profiled**: its own stations, process variables, cost
+fields and batch identifiers drive anomaly scoring, forensic cases, a measured propagation view,
+bottleneck ranking, cost estimation (from its own cost columns or a rate card you store for that
+dataset), repair candidates, an AI finding grounded on that dataset's evidence, and a downloadable
+report. Where a dataset cannot support a step, the capability map says so and the page repeats the
+reason instead of showing a zero.
+
+The what-if engine remains calibrated to the supplied Model 3 export — an arbitrary schema is told
+`simulation: no` with that reason rather than being fed old demo values. Every recommendation,
 intervention and profitability figure is *simulated / advisory*.
 
-> Honest scope, plainly: the upload path is *profile + capability map*. Running the simulation
-> engine on an arbitrary schema is a modelling project, not a feature toggle — see
-> `FINAL_AUDIT.md` §3.1.
+See `MULTI_DATASET_ARCHITECTURE.md` for the case-file model, the storage schema and the isolation
+rules, and `REPAIR_ANALYSIS.md` / `FINAL_REPORT_FORMAT.md` for the repair engine and the report.
 
 ---
 
@@ -213,10 +222,26 @@ cd backend && python -m uvicorn app.main:app --port 8001
 # FastAPI serves the built SPA at http://localhost:8001
 ```
 
+### Try the multi-dataset flow in a minute
+
+The two example CSVs the case-file demo uses are on disk and served by the dev server:
+
+```bash
+python scripts/make_demo_datasets.py          # → data/cache/demo/factory_batch_{a,b}.csv
+ls frontend/public/demo/                      # the same two files, served at /demo/…
+```
+
+Open the app, press **Upload Dataset** and pick `factory_batch_a.csv` (or download it from
+`http://127.0.0.1:5173/demo/factory_batch_a.csv`), run the analysis, then upload
+`factory_batch_b.csv` and run that one. Switch back to A with the header selector: A's defects,
+costs, repairs, scenarios and AI finding are all still there. A's constraint is Assembly, B's is
+Press 2; A has costs in its own columns, B asks for a rate card; the same AI question returns two
+different, dataset-correct answers.
+
 ### Verifying the build
 
 ```bash
-python -m pytest tests                                          # 100 tests
+python -m pytest tests                                          # 125 tests
 cd frontend && npm run typecheck && npm run build                # tsc, then bundle
 python scripts/smoke_test_api.py --base http://127.0.0.1:8001     # 151 assertions
 ```
@@ -224,7 +249,7 @@ python scripts/smoke_test_api.py --base http://127.0.0.1:8001     # 151 assertio
 `scripts/smoke_test_api.py` exercises every endpoint against a live server — **151 assertions**
 covering response shapes, gating behaviour, error paths and the "refuse to fabricate" cases.
 
-`tests/` holds **100 tests**:
+`tests/` holds **125 tests**:
 
 * `test_honesty_contract.py` (27) — asserts the system *refuses* to claim what the data cannot
   support: economics produces no total without a rate card, unsupported scenarios are rejected, the
@@ -239,6 +264,12 @@ covering response shapes, gating behaviour, error paths and the "refuse to fabri
   escape the upload directory), the 25 MB streaming cap, rejection of non-CSV and unreadable files,
   profiler detection, capability-map shape and reasons, catalog rebuild, and that a deleted upload
   disappears from the catalog.
+* `test_multi_dataset.py` (18) — the case-file layer: one case file per dataset; two uploaded
+  datasets keep separate analysis, rate cards, scenarios, feedback and reports (A's bottleneck is
+  Assembly, B's is Press 2); reports contain only their own dataset; a deleted source keeps its
+  history; the same AI question on two datasets cannot reuse the other's evidence; a wrongly
+  flagged dataset recovers on read; repair pricing is never invented and the cheapest supported
+  effective repair needs both a valued effect and a priced intervention.
 * `test_contract_shapes.py` (9) — payload shapes the UI depends on, each of which was found broken
   live: numpy-safe JSON, status `stages`, documented vs undocumented columns, case
   `confidence_basis`, the vision localisation disclosure, the per-change `adjustable` map, and the
@@ -279,17 +310,49 @@ data and, just as importantly, what does not.
 
 ## 8. Main features
 
+### Case files (one per dataset)
+Every dataset — supplied or uploaded — has a stable id (`ds-factory-batch-a`), an upload date, a
+status, a profile, a capability map and its own saved analysis, rate card, scenarios, AI finding,
+review decisions and reports. The header selector switches the active dataset and every page
+re-fetches against it; uploading a second CSV creates a second case file and never overwrites the
+first. `/dataset/<id>` is the workspace: identity, status, capability chips, the
+analysis-complete card (main issue, repair, estimated impact, confidence, limitations),
+download links, the section index and the saved history.
+
 ### Dashboard
 Quality, defect rate, bottleneck candidate, throughput, WIP, economic status — each card either
-shows a dataset-derived number or says why it cannot.
+shows a dataset-derived number or says why it cannot. The four headline cards are read from the
+saved run, so a supported feature is never labelled "not supported". The **Upload Dataset**
+and **Inspect an image** controls live here.
 
-### Data (Datasets page)
-What was found, what was measured rather than assumed, and what is missing — plus an
-**Upload your own dataset (CSV)** control. An uploaded file is stored under
+### Datasets (history, schema & quality)
+The dataset history: every case file with its upload date, status, size, saved-artifact counts
+(`3 analyses · 0 scenarios · 0 reviews · rate card`), Open and Delete actions, then the full
+schema and quality report of the supplied archives. An uploaded file is stored under
 `data/user_datasets/`, profiled (columns, types, station / process / cost / batch fields) and
 listed with the supplied datasets. Every dataset carries a **capability map**:
 `✓ production ✓ anomaly ✗ economics — no cost, price or revenue columns were detected`. A file
 that supports nothing says so, with the reason for each of the six analysed features.
+
+### Economics (rate card)
+Cost analysis is per dataset. Where the dataset carries cost columns the rates are read from them
+and every line says which column it used; where it does not, the page asks for a rate card
+(scrap, rework, downtime, holding, unit value, intervention cost) and stores it **against that
+dataset only**. No figure is invented and no rate is shared silently.
+
+### Repairs (interventions)
+Candidate interventions are discovered from the dataset itself — cut downtime, cut scrap, cut
+rework, reduce queue/WIP, reduce cycle time — each with its measured quantity, expected quality and
+throughput effect, expected loss reduction, intervention cost, net impact, confidence and
+assumptions. The app then names the **cheapest supported effective repair**: the highest net
+benefit per unit of intervention cost among repairs whose effect *and* cost are both supported.
+When no intervention cost is known it says "Repair cost comparison unavailable until a rate card
+is provided." instead of ranking anything. See `REPAIR_ANALYSIS.md`.
+
+### Reports
+Download the final analysis as **Markdown, CSV or JSON**, generated from the saved results of the
+active dataset, each carrying the dataset name, dataset id, catalog key, source file, upload date,
+generation time and the analysis-run id it was built from. See `FINAL_REPORT_FORMAT.md`.
 
 ### Inspection
 Two tabs share one page:
@@ -458,6 +521,10 @@ characters dropped, look-alike hyphens and spaces mapped to ASCII) before schema
 | `API_REFERENCE.md` | Every endpoint: input, processing, output, errors |
 | `DATASET_EXPLANATION.md` | What each supplied file contains and what it can/cannot support |
 | `DATASET_SCHEMA.md` | Column-level schema and quality report |
+| `DATASET_GUIDE.md` | How to prepare your own CSV, column by column, and what each choice unlocks |
+| `MULTI_DATASET_ARCHITECTURE.md` | Case files, storage schema, isolation rules, switching and persistence |
+| `REPAIR_ANALYSIS.md` | Candidate discovery, rate provenance, cheapest supported effective repair |
+| `FINAL_REPORT_FORMAT.md` | What the downloadable report contains, per format |
 | `EXTERNAL_IMAGE_TEST_REPORT.md` | The measured external-image campaign, including the failures |
 | `TEST_REPORT.md` | What was run, what passed, and what each layer caught |
 | `SECURITY_AUDIT.md` | Input handling, secrets, CORS, uploads, AI-output safety |

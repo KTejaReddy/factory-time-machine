@@ -268,9 +268,35 @@ def analysis_summary(key: str = Query(...)) -> Dict[str, Any]:
         return {"status": "not_run", "key": key}
     payload = stored["payload"]
     summary = payload.get("summary", {})
-    repair = (payload.get("sections", {}).get("repairs") or {}).get("cheapest_supported_effective_repair")
+    sections = payload.get("sections", {}) or {}
+    repair = (sections.get("repairs") or {}).get("cheapest_supported_effective_repair")
     economic = summary.get("economic", {})
     return {
+        #: The four headline cards on the Overview page, read from the *saved* run
+        #: rather than re-measured. Without this the cards had to guess, and the
+        #: Process card claimed "not supported by this dataset" for a dataset whose
+        #: anomaly analysis had in fact run.
+        "highlights": {
+            "quality": {
+                "rows": (sections.get("quality") or {}).get("rows"),
+                "missing_cells": (sections.get("quality") or {}).get("missing_cells"),
+                "duplicate_rows": (sections.get("quality") or {}).get("duplicate_rows"),
+            },
+            "process": {
+                "available": bool((sections.get("anomaly") or {}).get("available")),
+                "anomalous_fraction": (sections.get("anomaly") or {}).get("anomalous_fraction"),
+                "reason": (sections.get("anomaly") or {}).get("reason"),
+            },
+            "production": {
+                "available": bool((sections.get("production") or {}).get("available")),
+                "bottleneck": (sections.get("production") or {}).get("bottleneck"),
+                "reason": (sections.get("production") or {}).get("reason"),
+            },
+            "economics": {
+                "available": bool((sections.get("economics") or {}).get("available")),
+                "reason": (sections.get("economics") or {}).get("reason"),
+            },
+        },
         "status": "complete",
         "dataset": payload.get("dataset", {}),
         "generated_at": payload.get("generated_at"),

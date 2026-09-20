@@ -1,7 +1,8 @@
 # API_REFERENCE.md
 
 Every HTTP endpoint of Factory Time Machine, with inputs, processing, side effects and error
-behaviour. Base URL in development: `http://127.0.0.1:8000`. Interactive docs: `/docs`.
+behaviour. Base URL in development: `http://127.0.0.1:8001` (the Vite dev server proxies `/api`
+there). Interactive docs: `/docs`.
 
 Legend: **AI?** — does the handler involve the language model at all (all numbers still come
 from Python). **DB?** — does it read/write the SQLite store.
@@ -36,7 +37,37 @@ Liveness + configuration snapshot: catalog state, whether the LLM is enabled, `a
 |---|---|---|---|---|---|---|
 | POST | `/api/upload/` | Add a CSV of your own data | multipart `files` (one or more `*.csv`) | Basename sanitisation (a crafted `../../app/main.py.csv` lands as `main.py.csv` inside `data/user_datasets`) → 25 MB streaming cap → must parse as a table → catalog rebuild → profiler → capability map | `{message, files, uploaded:[{key, label, rows, columns, capabilities}], status}` | **400** not a CSV / empty / unreadable · **413** above the 25 MB cap |
 
-The uploaded file is listed by `/api/datasets/overview` under the key `user:<file stem>` and appears on the Datasets page with its capability map. That map has the same shape as the built-in datasets — `{"available": {vision, production, anomaly, forensics, economics, simulation}, "reasons": {...}, "detected": {...}}` — with a reason for every feature that is switched off, so the UI never shows a broken tab without saying why. Uploaded datasets are **profiled, not analysed**: the what-if engine and the bottleneck scoring are calibrated to the supplied Model 3 export, and `available.simulation` is `false` for uploads for exactly that reason.
+The uploaded file is listed by `/api/datasets/overview` under the key `user:<file stem>` and appears on the Datasets page with its capability map. That map has the same shape as the built-in datasets — `{"available": {vision, production, anomaly, forensics, economics, simulation}, "reasons": {...}, "detected": {...}}` — with a reason for every feature that is switched off, so the UI never shows a broken tab without saying why. The upload also creates a **case file** for the dataset (see the workspace section below) and becomes the active dataset. `available.simulation` is `false` for an upload because the what-if engine is calibrated to the supplied Model 3 export — that reason is returned, not hidden.
+
+---
+
+## Dataset workspace / case files (`routers/workspace.py`)
+
+Every endpoint is dataset-scoped by an explicit `key` (or the stable dataset id `ds-…` where a
+path is used). Nothing is inferred from "the current page". See
+`MULTI_DATASET_ARCHITECTURE.md` for the model and `FINAL_REPORT_FORMAT.md` for the report.
+
+| Method | Route | Purpose | Input | Processing | Output | Errors |
+|---|---|---|---|---|---|---|
+| GET | `/api/workspace/datasets` | The dataset history: every case file, newest first | — | Reconciles presence flags against the source files, reads registry rows, counts each dataset's saved artifacts | `{active, count, datasets:[{id, key, name, kind, source_file, uploaded_at, status, status_label, rows, columns, profile, capabilities, present, artifacts}]}` | — |
+| GET | `/api/workspace/datasets/{key-or-id}` | One case file's header + saved history | path key or id | Record + last 5 analysis runs + rate card + scenario history + feedback count | `{dataset, latest_analysis, analysis_runs, rate_card, scenarios, feedback_count, loaded}` | **404** unknown |
+| DELETE | `/api/workspace/datasets/{key-or-id}` | Remove an uploaded CSV | path key or id | Deletes the file, keeps the record (flagged `file_missing`) and its history | `{deleted, record, note}` | **400** for a supplied archive · **404** unknown |
+| GET | `/api/workspace/active` | Read the active dataset | — | Server preference, else newest upload, else any present dataset | `{active}` | — |
+| POST | `/api/workspace/active` | Set the active dataset | `{key}` | Persists the preference | `{active}` | **400** missing key · **409** source file missing · **404** unknown |
+| POST | `/api/workspace/analysis/run` | Compute **and store** the full result set | `key`, optional `rates`, `use_saved_rates`, `include_ai` | Quality, process, production, anomaly, forensics, propagation, economics, repairs + AI narrative; persisted as an `analysis_runs` row | `{dataset, generated_at, capabilities, sections, summary, ai, saved_at, run_id}` | **404** unknown · **409** source file missing |
+| GET | `/api/workspace/analysis` | The saved result set | `key` | DB read | `{status:"saved", …}` or `{status:"not_run", reason}` | **404/409** |
+| GET | `/api/workspace/summary` | The "analysis complete" card | `key` | Reads the saved run | `{status, dataset, generated_at, analysis_run_id, main_issue, repair, estimated_impact, currency, confidence, highlights:{quality, process, production, economics}, formats:[{format,label,url}], limitations}` | **404/409** |
+| GET | `/api/workspace/rate-card` | This dataset's rates | `key` | DB read | `{key, rate_card, updated_at}` | **404/409** |
+| POST | `/api/workspace/rate-card` | Store rates for this dataset | `key`, `CostRateCard`, `engineer` | Upsert (one row per dataset) | `{key, rate_card, saved:true, updated_at}` | **404/409 · 422** |
+| DELETE | `/api/workspace/rate-card` | Remove the rate card | `key` | Delete | `{key, deleted}` | **404/409** |
+| GET | `/api/workspace/repairs` | Repair options + the selected repair | `key` | Discovers candidates from the dataset, resolves rates, ranks | `{status, statement, currency, currency_source, rate_card_used, rates, dataset_cost_columns, cheapest_supported_effective_repair, candidates, reductions_assumed, limitations}` | **404/409** |
+| POST | `/api/workspace/repairs` | Same, with rates supplied in the body | `key`, optional `rates` | As above, body overrides the stored card for this call | Same | **404/409 · 422** |
+| GET | `/api/workspace/report` | The final report | `key`, `format=json\|md\|csv`, `refresh`, `download` | Builds from the saved run (or recomputes when `refresh=true`) | JSON payload, or Markdown/CSV body, optionally as an attachment named `report-<dataset id>-<timestamp>.<ext>` | **404/409 · 422** bad format · **500** if the dataset has no saved run and cannot be analysed |
+
+**Isolation guarantees encoded here:** a key that is not loaded returns 404; a known case file whose
+source file is gone returns 409 with a plain-language explanation instead of a 500; every stored
+artifact is keyed by `dataset_key`, so no endpoint can return another dataset's analysis, rate
+card, scenarios, feedback or report.
 
 ---
 
