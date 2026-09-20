@@ -1,0 +1,33 @@
+# Factory Time Machine - Python dependencies
+#
+#   python -m pip install -r requirements.txt
+#
+# Versions are pinned to the set this build was developed and verified against
+# (Python 3.11+). The vision extras (torch) are only needed for the Inspection
+# page and for `python backend/training/train_vision.py`; every other feature
+# runs without them.
+
+# --- web layer ---------------------------------------------------------------
+fastapi==0.115.0
+uvicorn[standard]==0.34.0
+pydantic==2.9.2
+python-multipart==0.0.12
+
+# --- data / storage ----------------------------------------------------------
+SQLAlchemy==2.0.35
+pandas==2.3.3
+numpy==2.2.1
+scipy==1.18.0
+# pyarrow is the engine behind the parquet caches the catalog writes.
+pyarrow==24.0.0
+scikit-learn==1.6.0
+Pillow==11.0.0
+
+# --- AI API client -----------------------------------------------------------
+httpx==0.28.1
+
+# --- vision (Inspection page only) -------------------------------------------
+torch==2.12.1
+
+# --- tests -------------------------------------------------------------------
+pytest==8.3.4

@@ -1,0 +1,242 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #F0F4F8;
+  --color-surface: #FFFFFF;
+  --color-surfaceMuted: #F8FAFC;
+  --color-textMain: #1E293B;
+  --color-textMuted: #64748B;
+  --color-primary: #3B82F6;
+  --color-primaryHover: #2563EB;
+  --color-border: #E2E8F0;
+  --color-danger: #EF4444;
+  --color-warning: #F59E0B;
+  --color-success: #10B981;
+
+  --shadow-card: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* ------------------------------------------------------------------ tokens
+   The pages reference these names directly (`var(--color-ink)` and friends).
+   They went missing during a palette rework, which left every panel, chip,
+   input and table unstyled - the theme's colours simply had no values. Light
+   industrial: warm white paper, charcoal ink, slate-blue accent. */
+:root {
+  --color-void: #F0F4F8;
+  --color-hull: #F8FAFC;
+  --color-panel: #FFFFFF;
+  --color-edge: #E2E8F0;
+  --color-edge-strong: #CBD5E1;
+  --color-ink: #1E293B;
+  --color-ink-dim: #64748B;
+  --color-ink-faint: #94A3B8;
+  --color-accent: #3B82F6;
+  --color-accent-soft: #EFF6FF;
+  --color-accent-edge: #BFDBFE;
+  --color-ok: #10B981;
+  --color-ok-soft: #ECFDF5;
+  --color-ok-edge: #A7F3D0;
+  --color-warn: #F59E0B;
+  --color-warn-soft: #FFFBEB;
+  --color-warn-edge: #FDE68A;
+  --color-bad: #EF4444;
+  --color-bad-soft: #FEF2F2;
+  --color-bad-edge: #FECACA;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-textMain antialiased font-sans;
+  }
+  h1, h2, h3 {
+    color: var(--color-ink);
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-[12.5px] font-medium rounded-md transition-colors
+           border border-[var(--color-edge-strong)] bg-[var(--color-panel)] text-[var(--color-ink-dim)]
+           hover:bg-[var(--color-hull)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-edge)];
+  }
+  .btn:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply border-transparent bg-[var(--color-accent)] text-white hover:bg-[var(--color-primaryHover)];
+  }
+  .btn-ok {
+    @apply border-transparent bg-[var(--color-ok)] text-white hover:bg-[#059669];
+  }
+  .btn-warn {
+    @apply border-transparent bg-[var(--color-warn)] text-white hover:bg-[#D97706];
+  }
+  .btn-bad {
+    @apply border-transparent bg-[var(--color-bad)] text-white hover:bg-[#DC2626];
+  }
+
+  .panel {
+    @apply rounded-lg border border-[var(--color-edge)] bg-[var(--color-panel)];
+    box-shadow: var(--shadow-card);
+  }
+  .panel-head {
+    @apply flex items-start justify-between gap-3 border-b border-[var(--color-edge)] px-4 py-3;
+  }
+  .panel-title {
+    @apply text-[13.5px] font-semibold text-[var(--color-ink)];
+  }
+  .panel-flat {
+    @apply rounded-md border border-[var(--color-edge)] bg-[var(--color-hull)];
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full border px-2 py-[2px] text-[11px] font-medium leading-[1.5];
+    border-color: var(--color-edge-strong);
+    background: var(--color-hull);
+    color: var(--color-ink-dim);
+  }
+  .chip-ok {
+    border-color: var(--color-ok-edge);
+    background: var(--color-ok-soft);
+    color: var(--color-ok);
+  }
+  .chip-warn {
+    border-color: var(--color-warn-edge);
+    background: var(--color-warn-soft);
+    color: var(--color-warn);
+  }
+  .chip-bad {
+    border-color: var(--color-bad-edge);
+    background: var(--color-bad-soft);
+    color: var(--color-bad);
+  }
+  .chip-info {
+    border-color: var(--color-accent-edge);
+    background: var(--color-accent-soft);
+    color: var(--color-accent);
+  }
+  .chip-muted {
+    border-color: var(--color-edge);
+    background: var(--color-hull);
+    color: var(--color-ink-faint);
+  }
+  .chip-assumed {
+    border-color: var(--color-warn-edge);
+    background: repeating-linear-gradient(45deg, var(--color-warn-soft), var(--color-warn-soft) 4px, #fbf0da 4px, #fbf0da 8px);
+    color: var(--color-warn);
+  }
+
+  .field {
+    @apply w-full rounded-md border border-[var(--color-edge-strong)] bg-[var(--color-panel)] px-2.5 py-1.5
+           text-[12.5px] text-[var(--color-ink)] placeholder:text-[var(--color-ink-faint)]
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-edge)];
+  }
+  input[type="file"].field {
+    @apply py-1.5 text-[11.5px] text-[var(--color-ink-dim)];
+  }
+
+  .mono {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .eyebrow {
+    @apply text-[10px] font-semibold uppercase tracking-[0.09em] text-[var(--color-ink-faint)];
+  }
+
+  /* The dataset identity strip under the header: which case file is open. */
+  .location-bar {
+    @apply flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-[var(--color-edge)] px-6 py-2;
+    background: var(--color-hull);
+  }
+
+  .card {
+    @apply rounded-lg border border-[var(--color-edge)] bg-[var(--color-panel)] p-4;
+    box-shadow: var(--shadow-card);
+  }
+
+  .stat-value {
+    @apply text-[20px] font-semibold tracking-tight text-[var(--color-ink)];
+    font-variant-numeric: tabular-nums;
+  }
+
+  .link {
+    @apply text-[var(--color-accent)] underline decoration-[var(--color-accent-edge)] underline-offset-2 hover:text-[var(--color-primaryHover)];
+  }
+
+  .table {
+    @apply w-full border-collapse text-[12px];
+  }
+  .table th {
+    @apply border-b border-[var(--color-edge-strong)] px-2.5 py-2 text-left text-[10.5px] font-semibold
+           uppercase tracking-[0.07em] text-[var(--color-ink-faint)];
+  }
+  .table td {
+    @apply border-b border-[var(--color-edge)] px-2.5 py-1.5 text-[var(--color-ink-dim)];
+  }
+  .table tbody tr:hover {
+    background: var(--color-hull);
+  }
+
+  /* Callouts: one place for "this was measured", "this was assumed", "this is
+     switched off", so no page has to spell out its own colour for those. */
+  .callout {
+    @apply rounded-lg border p-3.5 text-[12.5px] leading-relaxed;
+    background: var(--color-accent-soft);
+    border-color: var(--color-accent-edge);
+    color: var(--color-ink-dim);
+  }
+  .callout-info {
+    background: var(--color-accent-soft);
+    border-color: var(--color-accent-edge);
+  }
+  .callout-warn {
+    background: var(--color-warn-soft);
+    border-color: var(--color-warn-edge);
+    color: #6b3f08;
+  }
+  .callout-bad {
+    background: var(--color-bad-soft);
+    border-color: var(--color-bad-edge);
+    color: #7d1a14;
+  }
+
+  /* React Flow node used by the propagation graph. Its border/background come
+     from per-stage inline styles; everything else lives here. */
+  .flow-node {
+    @apply min-w-[152px] max-w-[210px] rounded-md border px-2.5 py-2 text-[var(--color-ink)];
+    box-shadow: var(--shadow-card);
+  }
+  .flow-node.selected {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 1px;
+  }
+  .flow-node.assumed {
+    border-style: dashed;
+  }
+  .flow-node.unavailable {
+    opacity: 0.75;
+    filter: grayscale(0.35);
+  }
+
+  .fade-in {
+    animation: fade-in 180ms ease-out both;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in {
+    animation: none;
+  }
+}

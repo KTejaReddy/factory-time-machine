@@ -1,0 +1,60 @@
+# ---------------------------------------------------------------------------
+# Secrets - never commit a real API key
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# ---------------------------------------------------------------------------
+# Datasets (large binaries, supplied separately - see README "Dataset setup")
+# ---------------------------------------------------------------------------
+*.zip
+data/raw/
+data/cache/
+data/artifacts/
+# External test images (uploads + generated robustness probes). TEST-ONLY: this
+# directory is never read by the training pipeline, which reads train.zip only.
+data/external_test/
+
+# The catalog rebuilds data/cache from data/raw and the ZIPs on first start, and
+# the trained vision checkpoint lands there too. Nothing here is source.
+
+# ---------------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ---------------------------------------------------------------------------
+# Node / frontend
+# ---------------------------------------------------------------------------
+node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---------------------------------------------------------------------------
+# Editors / OS
+# ---------------------------------------------------------------------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+
+# ---------------------------------------------------------------------------
+# Logs
+# ---------------------------------------------------------------------------
+*.log
