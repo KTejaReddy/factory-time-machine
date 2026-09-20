@@ -44,63 +44,56 @@ function DatasetHistory() {
       {records.length === 0 ? (
         <Empty>No dataset yet. Upload a CSV on the Overview page to create the first case file.</Empty>
       ) : (
-        <div className="overflow-auto">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>dataset</th>
-                <th>id</th>
-                <th>uploaded</th>
-                <th>status</th>
-                <th>size</th>
-                <th>saved</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {records.map((record) => (
-                <tr key={record.key}>
-                  <td>
-                    <div className="font-medium text-[var(--color-ink)]">{record.name}</div>
-                    <div className="text-[10.5px] text-[var(--color-ink-faint)]">{record.source_file || "supplied archive"}</div>
-                  </td>
-                  <td className="mono text-[11px]">{record.id}</td>
-                  <td className="text-[11.5px] text-[var(--color-ink-dim)]">{formatDate(record.uploaded_at)}</td>
-                  <td>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {records.map((record) => (
+              <div key={record.key} className="glass-panel p-5 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-[10px] font-bold tracking-widest uppercase text-[var(--color-ink-faint)]">DATASET</div>
                     <Badge tone={statusTone(record.status)}>{record.status_label}</Badge>
-                  </td>
-                  <td className="mono text-[11px]">
-                    {record.kind === "images" ? `${int(record.rows)} images` : `${int(record.rows)} × ${record.columns}`}
-                  </td>
-                  <td className="mono text-[11px] text-[var(--color-ink-dim)]">
-                    {record.artifacts.analyses} analysis · {record.artifacts.scenarios} scenarios · {record.artifacts.feedback} reviews
-                  </td>
-                  <td>
-                    <div className="flex items-center justify-end gap-1.5">
-                      <Link
-                        className="btn btn-primary"
-                        to={`/dataset/${record.id}`}
-                        onClick={() => {
-                          if (record.present) {
-                            setActiveDataset(record.key);
-                            notifyWorkspaceChanged();
-                          }
-                        }}
-                      >
-                        Open
-                      </Link>
-                      {record.key.startsWith("user:") && record.present && (
-                        <button className="btn" title="Remove the CSV; the history stays" onClick={() => remove(record.key, record.name)}>
-                          Delete
-                        </button>
-                      )}
+                  </div>
+                  <div className="text-[16px] font-bold tracking-tight text-[var(--color-ink)] mb-1">{record.name}</div>
+                  <div className="text-[12px] text-[var(--color-ink-dim)] mb-4">{record.source_file || "supplied archive"}</div>
+                  
+                  <div className="space-y-1 text-[11.5px] text-[var(--color-ink-dim)]">
+                    <div className="flex justify-between">
+                      <span>Uploaded</span>
+                      <span className="font-medium text-[var(--color-ink)]">{formatDate(record.uploaded_at)}</span>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p className="mt-2 text-[11px] text-[var(--color-ink-faint)]">
+                    <div className="flex justify-between">
+                      <span>Size</span>
+                      <span className="font-medium text-[var(--color-ink)]">{record.kind === "images" ? `${int(record.rows)} images` : `${int(record.rows)} × ${record.columns}`}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Artifacts</span>
+                      <span className="font-medium text-[var(--color-ink)]">{record.artifacts.analyses} analysis</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-5 pt-4 border-t border-[rgba(20,180,100,0.15)] flex gap-2">
+                  <Link
+                    className="btn btn-primary flex-1 py-2 uppercase tracking-wide font-bold"
+                    to={`/dataset/${record.id}`}
+                    onClick={() => {
+                      if (record.present) {
+                        setActiveDataset(record.key);
+                        notifyWorkspaceChanged();
+                      }
+                    }}
+                  >
+                    Open Workspace
+                  </Link>
+                  {record.key.startsWith("user:") && record.present && (
+                    <button className="btn" title="Delete" onClick={() => remove(record.key, record.name)}>
+                      🗑️
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-[11.5px] text-[var(--color-ink-faint)]">
             Deleting removes the CSV only. The dataset's saved analysis, scenarios and feedback stay in its case file,
             flagged "source file missing".
           </p>

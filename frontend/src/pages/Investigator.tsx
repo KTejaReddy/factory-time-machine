@@ -35,7 +35,7 @@ export default function Investigator() {
   };
 
   const renderFinding = (payload: AINarrative) => (
-    <div className="panel bg-white p-6 shadow-sm border-[var(--color-edge)]">
+    <div className="glass-panel p-8 z-10">
       <div className="flex items-center justify-between gap-2 mb-5 border-b border-[var(--color-edge)] pb-4">
         <div className="flex items-center gap-2">
           <span className="grid h-7 w-7 place-items-center rounded bg-[var(--color-accent-soft)] text-[var(--color-accent)] text-[14px]">
@@ -56,8 +56,8 @@ export default function Investigator() {
 
         {payload.finding.evidence?.length > 0 && (
           <div>
-            <h4 className="text-[11.5px] font-semibold uppercase tracking-wider text-[var(--color-ink-faint)] mb-2">Evidence</h4>
-            <div className="bg-[var(--color-hull)] rounded-md p-3">
+            <h4 className="text-[11.5px] font-bold uppercase tracking-widest text-[var(--color-ink-faint)] mb-3">Evidence</h4>
+            <div className="glass-panel p-4">
               <Bullets items={payload.finding.evidence} />
             </div>
           </div>
@@ -87,16 +87,16 @@ export default function Investigator() {
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <header className="text-center fade-in pt-4">
-        <h1 className="text-[24px] font-bold tracking-tight text-[var(--color-ink)]">AI Assistant</h1>
+        <h1 className="text-[24px] font-bold tracking-widest text-[var(--color-ink)] uppercase">AI INVESTIGATOR</h1>
         <p className="mt-2 text-[14px] text-[var(--color-ink-dim)]">
           Ask about your manufacturing data.
         </p>
       </header>
 
-      <div className="panel p-6 bg-white shadow-sm border-[var(--color-edge)]">
+      <div className="glass-panel p-8 z-10">
         <div className="flex flex-col sm:flex-row gap-3">
           <input
-            className="field flex-1 text-[14px] px-4 py-2.5 bg-[var(--color-hull)]"
+            className="field flex-1 text-[15px] font-medium tracking-wide px-5 py-3 bg-[rgba(255,255,255,0.8)] backdrop-blur-sm border-[rgba(20,180,100,0.3)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] focus:ring-[rgba(34,197,94,0.5)] focus:bg-white transition-all"
             placeholder="Ask your question..."
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
@@ -131,7 +131,7 @@ export default function Investigator() {
         {error && <ErrorBox message={error} />}
 
         {asking ? (
-          <div className="panel p-8 text-center flex flex-col items-center justify-center text-[var(--color-ink-dim)]">
+          <div className="glass-panel p-10 text-center flex flex-col items-center justify-center text-[var(--color-ink-dim)]">
             <Spinner />
             <span className="mt-3 text-[13px]">Analyzing data...</span>
           </div>

@@ -4,25 +4,24 @@ import { Badge, Card, Empty, ErrorBox, FeedbackBar, Spinner } from "../component
 import { api, getActiveDataset, type ExternalImageEntry, type InspectionPrediction } from "../lib/api";
 import { pct, useApi } from "../lib/hooks";
 
-const GRID = 8;
-
 function AttentionOverlay({ prediction }: { prediction: InspectionPrediction }) {
-  const cells = Array.from({ length: GRID * GRID }, (_, i) => {
-    const gx = i % GRID;
-    const gy = Math.floor(i / GRID);
-    const match = prediction.attention.find((a) => Math.round(a.x * GRID) === gx && Math.round(a.y * GRID) === gy);
-    return { gx, gy, weight: match?.weight ?? 0 };
-  });
   return (
-    <div className="pointer-events-none absolute inset-0">
-      <div className="grid h-full w-full" style={{ gridTemplateColumns: `repeat(${GRID}, 1fr)`, gridTemplateRows: `repeat(${GRID}, 1fr)` }}>
-        {cells.map((cell) => (
-          <div
-            key={`${cell.gx}-${cell.gy}`}
-            style={{ background: cell.weight > 0 ? `rgba(251,113,133,${0.12 + cell.weight * 0.45})` : "transparent" }}
-          />
-        ))}
-      </div>
+    <div className="pointer-events-none absolute inset-0 overflow-hidden mix-blend-multiply transition-opacity duration-300">
+      {prediction.attention.map((a, i) => (
+        <div
+          key={i}
+          className="absolute rounded-full"
+          style={{
+            left: `${a.x * 100}%`,
+            top: `${a.y * 100}%`,
+            width: `${a.width * 100}%`,
+            height: `${a.height * 100}%`,
+            background: `radial-gradient(circle, rgba(239, 68, 68, ${a.weight * 0.9}) 0%, rgba(239, 68, 68, 0) 70%)`,
+            filter: "blur(20px)",
+            transform: "scale(1.8)",
+          }}
+        />
+      ))}
     </div>
   );
 }
@@ -38,7 +37,7 @@ function ResultPanel({
 }) {
   const [showAttention, setShowAttention] = useState(true);
   return (
-    <div className="flex flex-col md:flex-row gap-6">
+    <div className="glass-panel p-6 flex flex-col md:flex-row gap-8">
       {/* LEFT: Image */}
       <div className="w-full md:w-1/2 flex flex-col items-center">
         <div className="mb-3 w-full flex justify-between items-center px-1">
@@ -48,14 +47,23 @@ function ResultPanel({
             Grad-CAM Overlay
           </label>
         </div>
-        <div className="relative w-full aspect-square overflow-hidden rounded-md border border-[var(--color-edge)] bg-black shadow-sm">
+        <div className="relative w-full aspect-square overflow-hidden rounded-xl border border-[rgba(34,197,94,0.3)] bg-[rgba(0,0,0,0.9)] shadow-[0_10px_40px_-10px_rgba(34,197,94,0.2),inset_0_4px_20px_rgba(0,0,0,0.8)]">
           <img src={imageUrl} alt={prediction.specimen} className="block h-full w-full object-cover" />
           {showAttention && <AttentionOverlay prediction={prediction} />}
         </div>
         {showAttention && (
-          <p className="mt-3 text-[11.5px] text-center text-[var(--color-ink-faint)] max-w-xs leading-relaxed">
-            Highlighted area indicates where the AI focused. This is model attention, not a localized ground truth.
-          </p>
+          <div className="mt-4 w-full max-w-[280px] space-y-2">
+            <p className="text-[11.5px] text-center text-[var(--color-ink-faint)] leading-relaxed">
+              Highlighted area indicates where the AI focused. This is model attention, not a localized ground truth.
+            </p>
+            <div className="pt-2">
+              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-faint)] mb-1.5">
+                <span>Low Influence</span>
+                <span>High Influence</span>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-gradient-to-r from-[rgba(239,68,68,0.1)] to-[rgba(239,68,68,0.85)]" />
+            </div>
+          </div>
         )}
       </div>
 
@@ -76,26 +84,26 @@ function ResultPanel({
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div className="panel-flat p-3">
-            <div className="text-[11.5px] text-[var(--color-ink-faint)] uppercase tracking-wider mb-1">Prediction</div>
-            <div className="text-[16px] font-semibold text-[var(--color-ink)]">{prediction.label_display}</div>
+          <div className="glass-panel p-4 text-center">
+            <div className="text-[11px] font-bold text-[var(--color-ink-faint)] uppercase tracking-[0.15em] mb-1.5">Prediction</div>
+            <div className="text-[17px] font-bold tracking-wide text-[var(--color-ink)]">{prediction.label_display}</div>
           </div>
-          <div className="panel-flat p-3">
-            <div className="text-[11.5px] text-[var(--color-ink-faint)] uppercase tracking-wider mb-1">Model Confidence</div>
-            <div className={`text-[16px] font-semibold ${prediction.confidence < 0.6 ? 'text-[var(--color-warn)]' : 'text-[var(--color-accent)]'}`}>
+          <div className="glass-panel p-4 text-center">
+            <div className="text-[11px] font-bold text-[var(--color-ink-faint)] uppercase tracking-[0.15em] mb-1.5">Confidence</div>
+            <div className={`text-[17px] font-bold tracking-wide ${prediction.confidence < 0.6 ? 'text-[var(--color-warn)]' : 'text-[var(--color-accent)]'}`}>
               {pct(prediction.confidence * 100, 1)}
             </div>
           </div>
-          <div className="panel-flat p-3">
-            <div className="text-[11.5px] text-[var(--color-ink-faint)] uppercase tracking-wider mb-1">TTA Stability</div>
-            <div className={`text-[14px] font-medium ${prediction.tta_agreement < 0.85 ? 'text-[var(--color-warn)]' : 'text-[var(--color-ink-dim)]'}`}>
+          <div className="glass-panel p-4 text-center">
+            <div className="text-[11px] font-bold text-[var(--color-ink-faint)] uppercase tracking-[0.15em] mb-1.5">TTA Stability</div>
+            <div className={`text-[15px] font-bold tracking-wide ${prediction.tta_agreement < 0.85 ? 'text-[var(--color-warn)]' : 'text-[var(--color-ink-dim)]'}`}>
               {pct(prediction.tta_agreement * 100, 0)}
             </div>
           </div>
-          <div className="panel-flat p-3">
-            <div className="text-[11.5px] text-[var(--color-ink-faint)] uppercase tracking-wider mb-1">Distribution Check</div>
-            <div className={`text-[13px] font-medium leading-snug ${prediction.out_of_distribution ? 'text-[var(--color-warn)]' : 'text-[var(--color-ok)]'}`}>
-              {prediction.out_of_distribution ? "Outside training distribution" : "In distribution"}
+          <div className="glass-panel p-4 text-center">
+            <div className="text-[11px] font-bold text-[var(--color-ink-faint)] uppercase tracking-[0.15em] mb-1.5">Dist. Check</div>
+            <div className={`text-[13px] font-bold tracking-wide leading-snug ${prediction.out_of_distribution ? 'text-[var(--color-warn)]' : 'text-[var(--color-ok)]'}`}>
+              {prediction.out_of_distribution ? "OOD" : "In distribution"}
             </div>
           </div>
         </div>
@@ -273,33 +281,82 @@ export default function Inspection() {
 
       {tab === "training" ? (
         <div className="grid gap-6">
-          <Card title="1. Select Image">
-            {!isVisionSupported ? (
-              <Empty>No inspection images were found in this dataset.</Empty>
-            ) : samples.loading ? (
-              <Spinner />
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {Object.entries(samples.data?.samples ?? {}).map(([_, names]) =>
-                  names.map((name) => (
-                    <button
-                      key={name}
-                      onClick={() => runInspection(name)}
-                      title={name}
-                      className={`h-[64px] w-[64px] overflow-hidden rounded border-2 transition-all ${
-                        specimen === name && !isExternal ? "border-[var(--color-accent)] ring-2 ring-[var(--color-accent-soft)]" : "border-[var(--color-edge)] hover:border-[var(--color-accent-edge)]"
-                      }`}
-                    >
-                      <img src={api.thumbnailUrl(name, 128)} alt={name} loading="lazy" className="h-full w-full object-cover" />
-                    </button>
-                  )),
-                )}
+          {isVisionSupported ? (
+            <Card title="1. Select Image">
+              {samples.loading ? (
+                <Spinner />
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(samples.data?.samples ?? {}).map(([_, names]) =>
+                    names.map((name) => (
+                      <button
+                        key={name}
+                        onClick={() => runInspection(name)}
+                        title={name}
+                        className={`h-[64px] w-[64px] overflow-hidden rounded border-2 transition-all ${
+                          specimen === name && !isExternal ? "border-[var(--color-accent)] ring-2 ring-[var(--color-accent-soft)]" : "border-[var(--color-edge)] hover:border-[var(--color-accent-edge)]"
+                        }`}
+                      >
+                        <img src={api.thumbnailUrl(name, 128)} alt={name} loading="lazy" className="h-full w-full object-cover" />
+                      </button>
+                    )),
+                  )}
+                </div>
+              )}
+              <p className="mt-3 text-[11.5px] text-[var(--color-ink-faint)]">
+                These images belong to the active dataset.
+              </p>
+            </Card>
+          ) : (
+            <Card>
+              <div className="text-center py-8 space-y-4">
+                <div className="text-[18px] font-bold text-[var(--color-ink)]">NO IMAGES IN THIS DATASET</div>
+                <div className="text-[13.5px] text-[var(--color-ink-dim)] max-w-sm mx-auto leading-relaxed">
+                  This dataset contains tabular manufacturing data only.
+                  <br/><br/>
+                  You can still use:
+                </div>
+                <div className="flex flex-col gap-1.5 items-center text-[13px] text-[var(--color-ink-dim)] font-medium">
+                  <span>✓ Process analysis</span>
+                  <span>✓ Production analysis</span>
+                  <span>✓ Bottleneck analysis</span>
+                  <span>✓ Economics</span>
+                  <span>✓ What-If</span>
+                </div>
+                <div className="pt-4">
+                  <button className="btn" onClick={() => setTab("external")}>Test an External Image</button>
+                </div>
               </div>
-            )}
-            <p className="mt-3 text-[11.5px] text-[var(--color-ink-faint)]">
-              These images come from the training archive.
-            </p>
-          </Card>
+            </Card>
+          )}
+
+          {!isVisionSupported && Object.keys(samples.data?.samples ?? {}).length > 0 && (
+            <Card title="TRAINING ARCHIVE">
+              <p className="mb-4 text-[12.5px] text-[var(--color-ink-dim)]">
+                These images are model/training examples and do not belong to the current dataset.
+              </p>
+              {samples.loading ? (
+                <Spinner />
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(samples.data?.samples ?? {}).map(([_, names]) =>
+                    names.map((name) => (
+                      <button
+                        key={name}
+                        onClick={() => runInspection(name)}
+                        title={name}
+                        className={`h-[64px] w-[64px] overflow-hidden rounded border-2 transition-all ${
+                          specimen === name && !isExternal ? "border-[var(--color-accent)] ring-2 ring-[var(--color-accent-soft)]" : "border-[var(--color-edge)] hover:border-[var(--color-accent-edge)]"
+                        }`}
+                      >
+                        <img src={api.thumbnailUrl(name, 128)} alt={name} loading="lazy" className="h-full w-full object-cover" />
+                      </button>
+                    )),
+                  )}
+                </div>
+              )}
+            </Card>
+          )}
 
           <Card title="2. Inspection Result">
             {loading && !isExternal ? (

@@ -96,25 +96,16 @@ export default function Dashboard() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
-      <section className="pt-6 text-center fade-in">
-        <h1 className="text-[28px] font-bold tracking-tight text-[var(--color-ink)]">Factory Time Machine</h1>
-        <p className="mt-3 text-[15px] text-[var(--color-ink-dim)]">
-          Every manufacturing dataset gets its own intelligent case file.
+      <section className="pt-6 pb-2 text-center fade-in">
+        <h1 className="text-[28px] font-bold tracking-widest text-[var(--color-ink)] uppercase">Factory Time Machine</h1>
+        <p className="mt-2 text-[13.5px] uppercase tracking-[0.15em] text-[var(--color-ink-faint)]">
+          Manufacturing intelligence from your data.
         </p>
-        <div className="mt-6 flex justify-center gap-3">
-          <Link className="btn px-5 py-2.5 text-[14px]" to="/datasets">
-            Your datasets
-          </Link>
-          <Link className="btn px-5 py-2.5 text-[14px]" to="/investigator">
-            Ask AI
-          </Link>
-        </div>
       </section>
-
       <div className="mt-8 grid gap-6 md:grid-cols-2">
-        <section className="panel flex flex-col items-center justify-center border border-[var(--color-edge)] bg-white p-8 shadow-sm">
+        <section className="panel flex flex-col items-center justify-center p-8 z-10">
           <div className="mb-2 text-[32px]">📊</div>
-          <h2 className="mb-1 text-[16px] font-bold uppercase tracking-wider text-[var(--color-ink)]">Analyze a Dataset</h2>
+          <h2 className="mb-1 text-[16px] font-bold uppercase tracking-widest text-[var(--color-ink)]">Analyze Your Data</h2>
           <p className="mb-6 text-[13px] text-[var(--color-ink-dim)]">CSV · one dataset per case file</p>
           <div className="flex w-full max-w-sm flex-col items-center">
             <input
@@ -126,8 +117,8 @@ export default function Dashboard() {
               className="field w-full text-center text-[13px]"
               onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
             />
-            <button className="btn btn-primary mt-3 w-full justify-center py-2 text-[14px]" disabled={!files.length || uploading} onClick={doUpload}>
-              {uploading ? "Uploading..." : "Upload Dataset"}
+            <button className="btn btn-primary mt-3 w-full justify-center py-2 text-[14px] font-bold tracking-wide" disabled={!files.length || uploading} onClick={doUpload}>
+              {uploading ? "Uploading..." : "UPLOAD DATASET"}
             </button>
             {uploadError && (
               <div className="mt-3 w-full">
@@ -155,7 +146,7 @@ export default function Dashboard() {
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button
-                    className="btn btn-primary"
+                    className="btn btn-primary font-bold"
                     onClick={() => {
                       const id = uploadResult.uploaded[0].dataset_id;
                       if (id) navigate(`/dataset/${id}`);
@@ -164,7 +155,7 @@ export default function Dashboard() {
                   >
                     Start analysis
                   </button>
-                  <Link className="btn" to="/datasets">
+                  <Link className="btn font-bold" to="/datasets">
                     All datasets
                   </Link>
                 </div>
@@ -173,9 +164,9 @@ export default function Dashboard() {
           </div>
         </section>
 
-        <section className="panel flex flex-col items-center justify-center border border-[var(--color-edge)] bg-white p-8 shadow-sm">
+        <section className="panel flex flex-col items-center justify-center p-8 z-10">
           <div className="mb-2 text-[32px]">👁️</div>
-          <h2 className="mb-1 text-[16px] font-bold uppercase tracking-wider text-[var(--color-ink)]">Inspect an Image</h2>
+          <h2 className="mb-1 text-[16px] font-bold uppercase tracking-widest text-[var(--color-ink)]">Inspect a Product</h2>
           <p className="mb-6 text-[13px] text-[var(--color-ink-dim)]">PNG · JPG · test images only</p>
           <div className="flex w-full max-w-sm flex-col items-center">
             <input

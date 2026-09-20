@@ -24,7 +24,7 @@ export default function Timeline({ events, firstStation }: { events: Event[]; fi
         </span>
       </div>
       <ol className="rail space-y-2.5">
-        {events.map((event) => {
+        {events.map((event, index) => {
           const isFirst = event.station === firstStation;
           const magnitude = Math.abs(event.z ?? 0);
           const width = max ? Math.max(2, (magnitude / max) * 100) : 0;
@@ -32,7 +32,7 @@ export default function Timeline({ events, firstStation }: { events: Event[]; fi
           const barColor =
             tone === "bad" ? "bg-[var(--color-bad)]" : tone === "warn" ? "bg-[var(--color-warn)]" : "bg-[var(--color-accent)]";
           return (
-            <li key={event.station} className="relative pl-10">
+            <li key={`${event.station}-${event.metric}-${index}`} className="relative pl-10">
               <span
                 className={`absolute left-[9px] top-3 grid h-3.5 w-3.5 place-items-center rounded-full border-2 ${
                   isFirst ? "border-[var(--color-bad)] bg-[var(--color-bad)]" : "border-[var(--color-edge)] bg-[var(--color-hull)]"

@@ -122,7 +122,7 @@ export default function WhatIf() {
     <div className="mx-auto max-w-6xl space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-[19px] font-semibold tracking-tight">What-If — {dataset.data?.dataset?.name ?? key}</h1>
+          <h1 className="text-[24px] font-bold tracking-widest text-[var(--color-ink)] uppercase">WHAT-IF LAB</h1>
           <p className="mt-1 max-w-3xl text-[12.5px] leading-relaxed text-[var(--color-ink-dim)]">
             Scenarios run against this dataset's model. Every run is stored under this dataset's case file, so a
             scenario run for another dataset never appears in this history.
@@ -132,7 +132,7 @@ export default function WhatIf() {
       </header>
 
       <div className="grid gap-6 md:grid-cols-[320px_1fr]">
-        <div className="panel sticky top-6 h-fit space-y-5 border border-[var(--color-edge)] bg-white p-6 shadow-sm">
+        <div className="glass-panel sticky top-24 h-fit space-y-5 p-6 z-10">
           <h2 className="text-[15px] font-bold text-[var(--color-ink)]">Configuration</h2>
           <div className="space-y-4">
             <div>

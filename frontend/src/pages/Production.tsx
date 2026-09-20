@@ -33,12 +33,12 @@ export default function Production() {
           {/* Main Content Area */}
           <div className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="panel p-5 bg-[var(--color-surface)] border-l-4 border-l-[var(--color-accent)]">
+              <div className="panel p-5 border-l-4 border-l-[rgba(34,197,94,0.6)]">
                 <div className="text-[11.5px] uppercase tracking-wider text-[var(--color-ink-faint)] font-semibold mb-1">Throughput</div>
                 <div className="text-[24px] font-bold text-[var(--color-ink)]">{snap?.throughput_total ? int(snap.throughput_total) : "—"}</div>
                 <div className="text-[12px] text-[var(--color-ink-dim)]">parts / run</div>
               </div>
-              <div className="panel p-5 bg-[var(--color-surface)] border-l-4 border-l-[var(--color-warn)]">
+              <div className="panel p-5 border-l-4 border-l-[rgba(245,158,11,0.6)]">
                 <div className="text-[11.5px] uppercase tracking-wider text-[var(--color-ink-faint)] font-semibold mb-1">Parts Waiting (WIP)</div>
                 <div className="text-[24px] font-bold text-[var(--color-ink)]">{num(snap?.wip_total ?? 0, 1)}</div>
                 <div className="text-[12px] text-[var(--color-ink-dim)]">parts</div>

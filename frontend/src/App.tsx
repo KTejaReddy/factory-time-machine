@@ -14,6 +14,8 @@ import Repairs from "./pages/Repairs";
 import Reports from "./pages/Reports";
 import Review from "./pages/Review";
 import WhatIf from "./pages/WhatIf";
+import AdminLogin from "./pages/AdminLogin";
+import AdminConsole from "./pages/AdminConsole";
 
 export default function App() {
   // Opting into the v7 behaviour flags keeps the console free of the router's
@@ -43,6 +45,8 @@ export default function App() {
           <Route path="/review" element={<Review />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/datasets" element={<Datasets />} />
+          <Route path="/admin-login" element={<AdminLogin />} />
+          <Route path="/admin" element={<AdminConsole />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

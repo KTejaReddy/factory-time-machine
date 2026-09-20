@@ -29,128 +29,110 @@ type FlowNode = Node<NodeData>;
 // Light industrial palette: paper-white cards with a slate-blue, amber, clay and
 // stone tint per stage. The graph used to be drawn on a near-black canvas, which
 // no longer matches the rest of the app.
-const STAGE_STYLES: Record<string, { border: string; bg: string }> = {
-  process: { border: "var(--color-accent-edge)", bg: "var(--color-accent-soft)" },
-  state: { border: "#6ee7b7", bg: "var(--color-ok-soft)" },
-  outcome: { border: "#fcd34d", bg: "var(--color-warn-soft)" },
-  economic: { border: "var(--color-edge-strong)", bg: "var(--color-hull)" },
-  defect: { border: "#fca5a5", bg: "var(--color-bad-soft)" },
+const STAGE_STYLES: Record<string, { border: string; bg: string; text?: string; mutedText?: string; shadow?: string }> = {
+  process: { border: "rgba(34,197,94,0.6)", bg: "rgba(255,255,255,0.75)", text: "var(--color-ink)", mutedText: "var(--color-ink-dim)", shadow: "0 8px 30px rgba(34,197,94,0.15)" },
+  state: { border: "rgba(203,213,225,0.6)", bg: "rgba(248,250,252,0.75)", text: "var(--color-ink)", mutedText: "var(--color-ink-dim)", shadow: "0 4px 15px rgba(0,0,0,0.05)" },
+  outcome: { border: "rgba(245,158,11,0.6)", bg: "rgba(255,251,235,0.85)", text: "#92400E", mutedText: "#B45309", shadow: "0 8px 30px rgba(245,158,11,0.15)" },
+  economic: { border: "rgba(6,78,59,0.8)", bg: "rgba(6,78,59,0.85)", text: "#FFFFFF", mutedText: "#A7F3D0", shadow: "0 8px 30px rgba(6,78,59,0.3)" },
+  defect: { border: "rgba(239,68,68,0.6)", bg: "rgba(254,242,242,0.85)", text: "#991B1B", mutedText: "#B91C1C", shadow: "0 8px 30px rgba(239,68,68,0.15)" },
 };
 
 function GraphNode({ data, selected }: NodeProps<FlowNode>) {
   const style = STAGE_STYLES[data.kind] ?? STAGE_STYLES.process;
-  const classes = ["flow-node", selected ? "selected" : "", data.status === "assumed" ? "assumed" : "", data.status === "unavailable" ? "unavailable" : ""]
-    .filter(Boolean)
-    .join(" ");
+  
   return (
-    <div className={classes} style={{ borderColor: style.border, background: style.bg }}>
-      <Handle type="target" position={Position.Left} style={{ background: "#8a97a8", width: 6, height: 6 }} />
-      <div className="text-[11.5px] font-semibold leading-tight">{data.label}</div>
-      <div className="mt-1 space-y-0.5 text-[10.5px] text-[var(--color-ink-faint)]">
-        {data.utilisation !== undefined && data.utilisation !== null && (
-          <div className="mono">util {pct(data.utilisation * 100, 1)}</div>
-        )}
-        {data.queue !== undefined && data.queue !== null && <div className="mono">queue {num(data.queue, 1)}</div>}
-        {data.images !== undefined && data.images !== null && <div className="mono">{num(data.images, 0)} images</div>}
-      </div>
-      {data.status !== "observed" && (
-        <div className="mt-1">
-          <span className={`chip ${data.status === "assumed" ? "chip-assumed" : "chip-muted"}`}>{data.status}</span>
+    <div 
+      className={`relative w-[240px] rounded-xl border-2 backdrop-blur-md transition-all duration-300 ${selected ? "ring-4 ring-[rgba(34,197,94,0.3)] scale-105 z-10" : "hover:scale-105"}`}
+      style={{ 
+        borderColor: style.border, 
+        background: style.bg, 
+        color: style.text || "var(--color-ink)",
+        boxShadow: selected ? style.shadow : "0 4px 6px rgba(0,0,0,0.05)",
+      }}
+    >
+      <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/40 to-transparent pointer-events-none" />
+      <Handle type="target" position={Position.Left} style={{ background: style.border, width: 8, height: 8, border: "2px solid white", left: -5 }} />
+      
+      <div className="p-4 relative z-10">
+        <div className="text-[10px] font-bold uppercase tracking-widest opacity-80 mb-1">{data.kind}</div>
+        <div className="text-[16px] font-bold leading-tight mb-3">{data.label}</div>
+        
+        <div className="space-y-1.5 text-[12px] font-medium" style={{ color: style.mutedText }}>
+          {data.utilisation !== undefined && data.utilisation !== null && (
+            <div className="flex justify-between"><span>Utilization</span> <span className="mono">{pct(data.utilisation * 100, 1)}</span></div>
+          )}
+          {data.queue !== undefined && data.queue !== null && (
+            <div className="flex justify-between"><span>Queue</span> <span className="mono">{num(data.queue, 1)}</span></div>
+          )}
+          {data.images !== undefined && data.images !== null && (
+            <div className="flex justify-between"><span>Images</span> <span className="mono">{num(data.images, 0)}</span></div>
+          )}
         </div>
-      )}
-      <Handle type="source" position={Position.Right} style={{ background: "#8a97a8", width: 6, height: 6 }} />
+        
+        <div className="mt-4 pt-3 border-t border-black/10 flex items-center gap-2">
+          <span className="relative flex h-2 w-2">
+            {data.status === "observed" && <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: style.border }}></span>}
+            <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: data.status === "unavailable" ? "#94A3B8" : style.border }}></span>
+          </span>
+          <span className="text-[11px] font-bold uppercase tracking-wider opacity-80">{data.status}</span>
+        </div>
+      </div>
+      
+      <Handle type="source" position={Position.Right} style={{ background: style.border, width: 8, height: 8, border: "2px solid white", right: -5 }} />
     </div>
   );
 }
 
 const nodeTypes = { flow: GraphNode };
 
-const COLUMN = 210;
-const ROUTE_Y = 340;
-const QUEUE_Y = 560;
-const OUTCOME_Y = 60;
-const DEFECT_Y = 780;
+// Removed unused layout constants
 
-/**
- * Positions derived from the graph itself, not from a list of hardcoded ids.
- *
- * An earlier version mapped a fixed set of node names (`stage_logistics`,
- * `state_storage`, ...) which had drifted from the API: 17 of the 32 nodes the
- * backend returns found no entry and spilled onto a fallback grid, which is what
- * turned the diagram into a hairball. The structure carries all of it:
- *
- * * the process route is the chain of `feeds` edges, laid out left to right so
- *   it reads like the plant (blanking -> forklift -> presses -> cells -> paint
- *   -> quality);
- * * a node the route feeds via `queues_parts_into` is that station's queue, hung
- *   underneath its station;
- * * `outcome`/`economic` nodes sit on the row above the route, `defect` nodes on
- *   their own row below (the archive shares no key with the route, so nothing
- *   joins them);
- * * anything the structure does not explain still gets a deterministic slot, so
- *   nothing is ever hidden.
- */
-export function layoutNodes(nodes: PropNode[], edges: PropEdge[]): Record<string, { x: number; y: number }> {
+export function layoutNodes(nodes: PropNode[]): Record<string, { x: number; y: number }> {
   const positions: Record<string, { x: number; y: number }> = {};
-  const routeIds = new Set<string>();
+  
+  // Group nodes by their logical stage in the story
+  const layers: Record<string, PropNode[]> = {
+    process: [],
+    defect: [],
+    outcome: [],
+    economic: [],
+    state: []
+  };
 
-  // 1. Walk the `feeds` chain from its head to its tail.
-  const feeds = edges.filter((edge) => edge.relation === "feeds");
-  const next = new Map<string, string>();
-  const hasIncoming = new Set<string>();
-  feeds.forEach((edge) => {
-    next.set(edge.source, edge.target);
-    hasIncoming.add(edge.target);
-    routeIds.add(edge.source);
-    routeIds.add(edge.target);
-  });
-  const head = nodes.find((node) => routeIds.has(node.id) && !hasIncoming.has(node.id))?.id;
-  const route: string[] = [];
-  for (let cursor = head; cursor && !route.includes(cursor); cursor = next.get(cursor)) route.push(cursor);
-  // Nodes on the route that the chain walk missed (a branch, or no head) keep
-  // their relative order from the payload.
   nodes.forEach((node) => {
-    if (routeIds.has(node.id) && !route.includes(node.id)) route.push(node.id);
+    if (layers[node.kind]) {
+      layers[node.kind].push(node);
+    } else {
+      layers.state.push(node); // Default unknown to state layer
+    }
   });
-  route.forEach((id, index) => {
-    positions[id] = { x: index * COLUMN, y: ROUTE_Y };
+
+  const COLUMN_WIDTH = 320;
+  const ROW_HEIGHT = 160;
+
+  // Horizontal story layout
+  let currentX = 0;
+  
+  const order = ["process", "defect", "outcome", "economic", "state"];
+  
+  order.forEach((layerKey) => {
+    const layerNodes = layers[layerKey];
+    if (layerNodes.length === 0) return;
+
+    // Center nodes vertically in their column based on how many there are
+    const totalHeight = layerNodes.length * ROW_HEIGHT;
+    const startY = -totalHeight / 2;
+
+    layerNodes.forEach((node, index) => {
+      positions[node.id] = {
+        x: currentX,
+        y: startY + (index * ROW_HEIGHT)
+      };
+    });
+
+    currentX += COLUMN_WIDTH;
   });
 
-  // 2. Queues hang below the station that feeds them.
-  edges
-    .filter((edge) => edge.relation === "queues_parts_into" && !positions[edge.target])
-    .forEach((edge, index) => {
-      const station = positions[edge.source];
-      positions[edge.target] = { x: station ? station.x : index * COLUMN, y: QUEUE_Y };
-    });
-
-  // 3. Defects on their own row - they are model labels, not route positions.
-  nodes
-    .filter((node) => node.kind === "defect" && !positions[node.id])
-    .forEach((node, index) => {
-      positions[node.id] = { x: index * COLUMN * 0.85, y: DEFECT_Y };
-    });
-
-  // 4. Outcomes above the route, to the right, nearest the end of the chain.
-  const routeWidth = Math.max(0, (route.length - 1) * COLUMN);
-  nodes
-    .filter((node) => (node.kind === "outcome" || node.kind === "economic") && !positions[node.id])
-    .forEach((node, index) => {
-      positions[node.id] = { x: Math.max(0, routeWidth - index * COLUMN * 0.75), y: OUTCOME_Y };
-    });
-
-  // 5. A declared process problem sits at the head of the route.
-  nodes
-    .filter((node) => node.kind === "process" && !positions[node.id])
-    .forEach((node, index) => {
-      positions[node.id] = { x: -COLUMN, y: ROUTE_Y - 120 * (index + 1) };
-    });
-
-  // 6. Anything still unplaced goes on a deterministic grid below.
-  const rest = nodes.filter((node) => !positions[node.id]);
-  rest.forEach((node, index) => {
-    positions[node.id] = { x: (index % 4) * COLUMN, y: DEFECT_Y + 150 * (Math.floor(index / 4) + 1) };
-  });
   return positions;
 }
 
@@ -171,7 +153,7 @@ export default function PropagationGraph({
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const flowNodes: FlowNode[] = useMemo(() => {
-    const positions = layoutNodes(nodes, edges);
+    const positions = layoutNodes(nodes);
     return nodes.map((node) => {
         const position = positions[node.id] ?? { x: 0, y: 0 };
         return {
@@ -189,7 +171,7 @@ export default function PropagationGraph({
           selected: selected?.id === node.id,
         } satisfies FlowNode;
       });
-  }, [nodes, edges, selected]);
+  }, [nodes, selected]);
 
   const flowEdges: Edge[] = useMemo(
     () =>
@@ -205,9 +187,9 @@ export default function PropagationGraph({
           labelBgStyle: { fill: "rgba(255,255,255,0.88)" },
           labelBgPadding: [4, 2] as [number, number],
           style: {
-            stroke: edge.status === "assumed" ? "#b45309" : edge.status === "unavailable" ? "#a8a29e" : "#34557f",
-            strokeWidth: edge.status === "assumed" ? 1.6 : Math.max(1, Math.min(3, Math.abs(edge.strength ?? 0.6) * 3)),
-            strokeDasharray: edge.status === "assumed" ? "6 4" : edge.status === "unavailable" ? "2 4" : undefined,
+            stroke: edge.status === "assumed" ? "#F59E0B" : edge.status === "unavailable" ? "#D1E5DB" : edge.relation === "associated" || edge.method === "association" ? "#6EE7B7" : "#22C55E",
+            strokeWidth: edge.status === "assumed" ? 2 : Math.max(1.5, Math.min(4, Math.abs(edge.strength ?? 0.6) * 4)),
+            strokeDasharray: edge.status === "assumed" ? "2 4" : edge.status === "unavailable" ? "4 4" : edge.relation === "associated" || edge.method === "association" ? "6 6" : undefined,
           },
         })),
     [edges, showAssumed],
@@ -235,12 +217,12 @@ export default function PropagationGraph({
       <div className="panel overflow-hidden">
         <div className="panel-head">
           <div>
-            <div className="panel-title">Failure propagation</div>
-            <div className="mt-0.5 text-[11.5px] text-[var(--color-ink-faint)]">
-              {flowNodes.length} nodes · {edgeCount} edges · click a node for its supporting data
+            <div className="text-[14px] font-bold tracking-wider text-[var(--color-ink)] uppercase">PROBLEM FLOW</div>
+            <div className="mt-1 text-[13px] text-[var(--color-ink-dim)]">
+              How the problem moves through the process
             </div>
-            <div className="mt-0.5 text-[11px] text-[var(--color-ink-faint)]">
-              Drag to move · scroll to zoom · the frame button (bottom left) fits the whole route
+            <div className="mt-1 text-[11px] font-medium text-[var(--color-ink-faint)]">
+              {flowNodes.length} nodes · {edgeCount} relationships
             </div>
           </div>
           <label className="flex items-center gap-2 text-[11.5px] text-[var(--color-ink-dim)]">

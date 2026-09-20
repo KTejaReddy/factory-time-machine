@@ -9,6 +9,7 @@ import {
   type DatasetRecord,
   type ProcessingStatus,
 } from "../lib/api";
+import { useAdminAuth } from "../lib/admin";
 import { Badge } from "./ui";
 
 const NAV = [
@@ -126,13 +127,14 @@ export default function Layout() {
   const activeKey = useActiveDatasetKey();
   const active = records.find((r) => r.key === activeKey);
   const selectable = records.filter((r) => r.present || r.key === activeKey);
+  const { isAuthenticated, logout } = useAdminAuth();
 
   const building = status && status.state !== "ready";
   const failed = status?.state === "failed";
 
   return (
-    <div className="flex min-h-screen bg-[var(--color-void)]">
-      <aside className="hidden w-[248px] shrink-0 flex-col border-r border-[var(--color-edge)] bg-white px-3 py-4 md:flex">
+    <div className="flex min-h-screen">
+      <aside className="hidden w-[248px] shrink-0 flex-col border-r border-[rgba(20,180,100,0.18)] bg-[rgba(255,255,255,0.5)] backdrop-blur-lg px-3 py-4 md:flex shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-30 fixed inset-y-0 left-0 overflow-y-auto">
         <div className="px-2 pb-4">
           <div className="flex items-center gap-2.5">
             <span className="grid h-8 w-8 place-items-center rounded-md bg-[var(--color-accent)] text-[15px] text-white">
@@ -152,10 +154,10 @@ export default function Layout() {
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition-colors ${
+                `flex items-center gap-3 px-3 py-2 text-[13px] font-bold tracking-wide transition-all duration-300 border-l-2 rounded-r-lg ${
                   isActive
-                    ? "bg-[var(--color-accent-soft)] text-[var(--color-accent)]"
-                    : "text-[var(--color-ink-dim)] hover:bg-[var(--color-hull)] hover:text-[var(--color-ink)]"
+                    ? "bg-[rgba(255,255,255,0.8)] text-[var(--color-accent)] border-[var(--color-accent)] shadow-[0_2px_10px_rgba(34,197,94,0.1),inset_0_1px_0_rgba(255,255,255,1)] translate-x-1"
+                    : "text-[var(--color-ink-dim)] border-transparent hover:bg-[rgba(255,255,255,0.5)] hover:text-[var(--color-ink)]"
                 }`
               }
             >
@@ -166,13 +168,24 @@ export default function Layout() {
           <NavLink
             to="/datasets"
             className={({ isActive }) =>
-              `flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition-colors ${
-                isActive ? "bg-[var(--color-accent-soft)] text-[var(--color-accent)]" : "text-[var(--color-ink-dim)] hover:bg-[var(--color-hull)]"
+              `flex items-center gap-3 px-3 py-2 text-[13px] font-bold tracking-wide transition-all duration-300 border-l-2 rounded-r-lg ${
+                isActive ? "bg-[rgba(255,255,255,0.8)] text-[var(--color-accent)] border-[var(--color-accent)] shadow-[0_2px_10px_rgba(34,197,94,0.1),inset_0_1px_0_rgba(255,255,255,1)] translate-x-1" : "text-[var(--color-ink-dim)] border-transparent hover:bg-[rgba(255,255,255,0.5)] hover:text-[var(--color-ink)]"
               }`
             }
           >
             <span className="text-[16px] opacity-90">🗂️</span>
             Datasets
+          </NavLink>
+          <NavLink
+            to={isAuthenticated ? "/admin" : "/admin-login"}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2 text-[13px] font-bold tracking-wide transition-all duration-300 border-l-2 rounded-r-lg ${
+                isActive ? "bg-[rgba(255,255,255,0.8)] text-[var(--color-accent)] border-[var(--color-accent)] shadow-[0_2px_10px_rgba(34,197,94,0.1),inset_0_1px_0_rgba(255,255,255,1)] translate-x-1" : "text-[var(--color-ink-dim)] border-transparent hover:bg-[rgba(255,255,255,0.5)] hover:text-[var(--color-ink)]"
+              }`
+            }
+          >
+            <span className="text-[16px] opacity-90">🛡️</span>
+            Admin Console
           </NavLink>
         </nav>
 
@@ -221,40 +234,46 @@ export default function Layout() {
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-edge)] bg-[rgba(255,255,255,0.94)] px-6 py-3 backdrop-blur shadow-sm">
-          <div className="flex flex-1 items-center gap-4">
-            <span className="text-[14px] font-semibold tracking-tight text-[var(--color-ink)] md:hidden">🏭 Factory Time Machine</span>
-            <span className="hidden text-[14px] font-semibold tracking-tight text-[var(--color-ink)] md:inline">Factory Time Machine</span>
-            <span className="hidden h-4 w-px bg-[var(--color-edge)] md:inline" />
-            {/* The active dataset is always explicit: this selector is the only
-                thing that changes which case file every page reads. */}
-            <label className="flex items-center gap-2">
-              <span className="eyebrow">Active dataset</span>
+      <div className="flex min-w-0 flex-1 flex-col z-0 md:pl-[248px]">
+        <header className="glass-header">
+          <div className="flex flex-1 items-center gap-6">
+            <span className="text-[14px] font-bold tracking-wider uppercase text-[var(--color-ink)]">Factory Time Machine</span>
+            <span className="hidden h-5 w-px bg-[var(--color-edge)] md:inline" />
+            <label className="flex items-center gap-3">
+              <span className="eyebrow tracking-widest text-[var(--color-accent)]">ACTIVE DATASET</span>
               <select
                 aria-label="Active dataset"
-                className="field !w-auto !py-1 text-[12.5px] font-medium"
+                className="field !w-auto !py-1 text-[13px] font-medium min-w-[200px]"
                 value={activeKey}
                 onChange={(event) => setActiveDataset(event.target.value)}
               >
                 {!activeKey && <option value="">— none selected —</option>}
                 {selectable.map((record) => (
                   <option key={record.key} value={record.key}>
-                    {record.name} — {record.status_label}
+                    Uploaded dataset: {record.name}
                   </option>
                 ))}
               </select>
             </label>
           </div>
-          <div className="flex items-center gap-2">
-            {building && <Badge tone="warn">● processing datasets…</Badge>}
-            {failed && <Badge tone="bad">● dataset error</Badge>}
-            <Link to="/datasets" className="btn">
-              🗂️ Datasets
-            </Link>
+          <div className="flex items-center gap-3">
+            {building ? <Badge tone="warn">● Processing datasets…</Badge> : failed ? <Badge tone="bad">● Dataset error</Badge> : <Badge tone="ok">● Dataset Ready</Badge>}
             <Badge tone="muted" title="Every finding in this tool is advisory; it cannot command machinery.">
-              ● Advisory only
+              ● Advisory Only
             </Badge>
+            <div className="h-5 w-px bg-[var(--color-edge)] mx-1" />
+            {isAuthenticated ? (
+              <div className="flex items-center gap-3">
+                <span className="text-[12px] font-bold text-[var(--color-accent)] uppercase tracking-wider">● Admin</span>
+                <button onClick={() => logout()} className="btn !py-1 !px-2 text-[11px] font-bold">
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <Link to="/admin-login" className="btn !py-1 !px-2 text-[11px] font-bold uppercase">
+                Admin Login
+              </Link>
+            )}
           </div>
         </header>
 

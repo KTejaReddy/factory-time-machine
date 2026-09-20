@@ -1,52 +1,56 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #F0F4F8;
+  --color-background: #F4FBF7;
   --color-surface: #FFFFFF;
   --color-surfaceMuted: #F8FAFC;
-  --color-textMain: #1E293B;
-  --color-textMuted: #64748B;
-  --color-primary: #3B82F6;
-  --color-primaryHover: #2563EB;
-  --color-border: #E2E8F0;
-  --color-danger: #EF4444;
-  --color-warning: #F59E0B;
-  --color-success: #10B981;
+  --color-textMain: #1F2924;
+  --color-textMuted: #4B5563;
+  --color-primary: #05C46B;
+  --color-primaryHover: #04A65A;
+  --color-border: #A3D9B5;
+  --color-danger: #FF3B30;
+  --color-warning: #FF9500;
+  --color-success: #34C759;
 
   --shadow-card: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
-/* ------------------------------------------------------------------ tokens
-   The pages reference these names directly (`var(--color-ink)` and friends).
-   They went missing during a palette rework, which left every panel, chip,
-   input and table unstyled - the theme's colours simply had no values. Light
-   industrial: warm white paper, charcoal ink, slate-blue accent. */
+/* ------------------------------------------------------------------ tokens */
 :root {
-  --color-void: #F0F4F8;
-  --color-hull: #F8FAFC;
+  --color-void: #F4FBF7;
+  --color-hull: #FAFDFA;
   --color-panel: #FFFFFF;
-  --color-edge: #E2E8F0;
-  --color-edge-strong: #CBD5E1;
-  --color-ink: #1E293B;
-  --color-ink-dim: #64748B;
-  --color-ink-faint: #94A3B8;
-  --color-accent: #3B82F6;
-  --color-accent-soft: #EFF6FF;
-  --color-accent-edge: #BFDBFE;
-  --color-ok: #10B981;
-  --color-ok-soft: #ECFDF5;
-  --color-ok-edge: #A7F3D0;
+  --color-edge: #D1E5DB;
+  --color-edge-strong: #A3C9B6;
+  --color-ink: #1F2924;
+  --color-ink-dim: #4B5563;
+  --color-ink-faint: #6B7280;
+  --color-accent: #05C46B;
+  --color-accent-soft: #D1F2E0;
+  --color-accent-edge: #6AE8A6;
+  --color-ok: #34C759;
+  --color-ok-soft: #D5F5DF;
+  --color-ok-edge: #7CE09A;
   --color-warn: #F59E0B;
-  --color-warn-soft: #FFFBEB;
+  --color-warn-soft: #FEF3C7;
   --color-warn-edge: #FDE68A;
   --color-bad: #EF4444;
-  --color-bad-soft: #FEF2F2;
+  --color-bad-soft: #FEE2E2;
   --color-bad-edge: #FECACA;
 }
 
 @layer base {
   body {
-    @apply bg-background text-textMain antialiased font-sans;
+    @apply text-textMain antialiased font-sans;
+    background-color: #EEF8F3;
+    background-image: 
+      radial-gradient(circle at top right, rgba(5, 196, 107, 0.15) 0%, transparent 50%),
+      radial-gradient(circle at bottom left, rgba(5, 196, 107, 0.1) 0%, transparent 50%),
+      linear-gradient(to right, rgba(31,41,36,0.035) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(31,41,36,0.035) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+    background-attachment: fixed;
   }
   h1, h2, h3 {
     color: var(--color-ink);
@@ -55,15 +59,50 @@
 
 @layer components {
   .btn {
-    @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-[12.5px] font-medium rounded-md transition-colors
-           border border-[var(--color-edge-strong)] bg-[var(--color-panel)] text-[var(--color-ink-dim)]
-           hover:bg-[var(--color-hull)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-edge)];
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-bold tracking-widest uppercase rounded-lg transition-all duration-300 relative overflow-hidden;
+    background: linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(240,250,245,0.8) 100%);
+    border: 1px solid rgba(34,197,94,0.3);
+    border-top-color: rgba(255,255,255,0.9);
+    color: var(--color-ink);
+    box-shadow: 
+      0 4px 6px -1px rgba(0,0,0,0.05),
+      0 2px 4px -1px rgba(0,0,0,0.03),
+      inset 0 2px 3px rgba(255,255,255,1);
+  }
+  .btn:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(245,253,248,0.95) 100%);
+    border-color: rgba(34,197,94,0.5);
+    border-top-color: #fff;
+    box-shadow: 
+      0 10px 15px -3px rgba(34,197,94,0.15),
+      0 4px 6px -2px rgba(34,197,94,0.1),
+      inset 0 2px 4px rgba(255,255,255,1);
+  }
+  .btn:active {
+    transform: translateY(1px);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
   }
   .btn:disabled {
-    @apply opacity-50 cursor-not-allowed;
+    @apply opacity-50 cursor-not-allowed hover:transform-none hover:shadow-none;
   }
   .btn-primary {
-    @apply border-transparent bg-[var(--color-accent)] text-white hover:bg-[var(--color-primaryHover)];
+    background: linear-gradient(180deg, var(--color-accent) 0%, #16a34a 100%);
+    border: 1px solid #15803d;
+    border-top-color: #4ade80;
+    color: white;
+    box-shadow: 
+      0 6px 12px -2px rgba(34,197,94,0.4),
+      inset 0 2px 3px rgba(255,255,255,0.4);
+  }
+  .btn-primary:hover {
+    background: linear-gradient(180deg, #4ade80 0%, var(--color-accent) 100%);
+    border-color: #166534;
+    border-top-color: #86efac;
+    box-shadow: 
+      0 12px 20px -4px rgba(34,197,94,0.5),
+      0 4px 8px -2px rgba(34,197,94,0.3),
+      inset 0 2px 4px rgba(255,255,255,0.6);
   }
   .btn-ok {
     @apply border-transparent bg-[var(--color-ok)] text-white hover:bg-[#059669];
@@ -75,9 +114,41 @@
     @apply border-transparent bg-[var(--color-bad)] text-white hover:bg-[#DC2626];
   }
 
-  .panel {
-    @apply rounded-lg border border-[var(--color-edge)] bg-[var(--color-panel)];
-    box-shadow: var(--shadow-card);
+  .glass-header {
+    @apply sticky top-0 z-20 flex flex-wrap items-center justify-between gap-4 border-b border-[rgba(34,197,94,0.3)] px-6 py-3.5 backdrop-blur-3xl;
+    background: linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(244,251,247,0.7) 100%);
+    box-shadow: 
+      0 10px 30px -10px rgba(5, 196, 107, 0.15),
+      inset 0 -1px 2px rgba(34, 197, 94, 0.1),
+      inset 0 1px 1px rgba(255, 255, 255, 1);
+  }
+
+  .panel, .glass-panel {
+    @apply rounded-2xl border-t border-l border-b border-r backdrop-blur-2xl transition-all duration-500 relative;
+    background: linear-gradient(145deg, rgba(255,255,255,0.9) 0%, rgba(244,251,247,0.7) 100%);
+    border-color: rgba(255,255,255,1) rgba(255,255,255,0.5) rgba(20,180,100,0.3) rgba(255,255,255,0.8);
+    box-shadow: 
+      0 15px 35px -10px rgba(15, 60, 40, 0.15),
+      0 5px 15px -5px rgba(15, 60, 40, 0.1),
+      inset 0 2px 4px rgba(255, 255, 255, 1),
+      inset 0 -3px 6px rgba(20, 180, 100, 0.05);
+  }
+  .panel::after, .glass-panel::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 40%);
+    pointer-events: none;
+  }
+  .panel:hover, .panel-interactive:hover, .glass-panel:hover {
+    transform: translateY(-4px) scale(1.005);
+    background: linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(244,251,247,0.85) 100%);
+    border-color: rgba(255,255,255,1) rgba(255,255,255,0.7) rgba(34,197,94,0.5) rgba(255,255,255,0.9);
+    box-shadow: 
+      0 25px 50px -12px rgba(34, 197, 94, 0.25), 
+      0 10px 20px -8px rgba(34, 197, 94, 0.2), 
+      inset 0 2px 4px rgba(255, 255, 255, 1);
   }
   .panel-head {
     @apply flex items-start justify-between gap-3 border-b border-[var(--color-edge)] px-4 py-3;
@@ -86,7 +157,12 @@
     @apply text-[13.5px] font-semibold text-[var(--color-ink)];
   }
   .panel-flat {
-    @apply rounded-md border border-[var(--color-edge)] bg-[var(--color-hull)];
+    @apply rounded-xl border border-[rgba(34,197,94,0.2)] backdrop-blur-lg relative overflow-hidden;
+    background: linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(240,250,245,0.5) 100%);
+    box-shadow: 
+      inset 0 4px 10px rgba(0,0,0,0.03),
+      inset 0 1px 3px rgba(34,197,94,0.05),
+      0 2px 4px rgba(255,255,255,0.8);
   }
 
   .chip {
@@ -127,12 +203,15 @@
   }
 
   .field {
-    @apply w-full rounded-md border border-[var(--color-edge-strong)] bg-[var(--color-panel)] px-2.5 py-1.5
-           text-[12.5px] text-[var(--color-ink)] placeholder:text-[var(--color-ink-faint)]
-           focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-edge)];
+    @apply w-full rounded-lg border border-[rgba(34,197,94,0.3)] bg-[rgba(255,255,255,0.7)] backdrop-blur-md px-3 py-2
+           text-[13px] text-[var(--color-ink)] placeholder:text-[var(--color-ink-faint)] font-medium
+           shadow-[inset_0_2px_4px_rgba(0,0,0,0.04),0_1px_2px_rgba(255,255,255,0.8)]
+           transition-all duration-300 focus:bg-white focus:-translate-y-[1px]
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]
+           focus:shadow-[0_4px_10px_rgba(34,197,94,0.15),inset_0_1px_2px_rgba(0,0,0,0.02)];
   }
   input[type="file"].field {
-    @apply py-1.5 text-[11.5px] text-[var(--color-ink-dim)];
+    @apply py-2 text-[12px] text-[var(--color-ink-dim)];
   }
 
   .mono {
@@ -151,8 +230,18 @@
   }
 
   .card {
-    @apply rounded-lg border border-[var(--color-edge)] bg-[var(--color-panel)] p-4;
-    box-shadow: var(--shadow-card);
+    @apply rounded-xl border border-[rgba(34,197,94,0.2)] backdrop-blur-lg p-5 relative overflow-hidden transition-all duration-300;
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(240,250,245,0.6) 100%);
+    box-shadow: 
+      0 8px 20px -5px rgba(5, 196, 107, 0.1),
+      inset 0 2px 3px rgba(255, 255, 255, 1);
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+      0 15px 30px -5px rgba(5, 196, 107, 0.2),
+      inset 0 2px 3px rgba(255, 255, 255, 1);
+    border-color: rgba(34,197,94,0.4);
   }
 
   .stat-value {
@@ -204,19 +293,19 @@
   /* React Flow node used by the propagation graph. Its border/background come
      from per-stage inline styles; everything else lives here. */
   .flow-node {
-    @apply min-w-[152px] max-w-[210px] rounded-md border px-2.5 py-2 text-[var(--color-ink)];
-    box-shadow: var(--shadow-card);
+    @apply min-w-[180px] max-w-[240px] rounded-lg border-2 px-3 py-2.5 text-[var(--color-ink)];
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   }
   .flow-node.selected {
     outline: 2px solid var(--color-accent);
-    outline-offset: 1px;
+    outline-offset: 2px;
   }
   .flow-node.assumed {
-    border-style: dashed;
+    border-style: dotted;
   }
   .flow-node.unavailable {
-    opacity: 0.75;
-    filter: grayscale(0.35);
+    opacity: 0.6;
+    filter: grayscale(0.5);
   }
 
   .fade-in {

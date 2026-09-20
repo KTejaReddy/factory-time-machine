@@ -6,8 +6,8 @@ import { num, pct, useApi } from "../lib/hooks";
 
 export default function Forensic() {
   const cases = useApi(() => api.cases(), []);
-  const [caseId, setCaseId] = useState<string>("group:congested");
-  const detail = useApi(() => api.case(caseId), [caseId]);
+  const [caseId, setCaseId] = useState<string>("");
+  const detail = useApi(() => caseId ? api.case(caseId) : Promise.resolve(null), [caseId]);
   const [feedbackKey, setFeedbackKey] = useState(0);
 
   useEffect(() => {

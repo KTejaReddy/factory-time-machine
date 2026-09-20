@@ -10,13 +10,13 @@ export default function Propagation() {
     <div className="space-y-6 max-w-7xl">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-[24px] font-bold tracking-tight">Problem Flow</h1>
+          <h1 className="text-[24px] font-bold tracking-tight text-[var(--color-ink)]">Problem Flow</h1>
           <p className="mt-2 text-[14px] text-[var(--color-ink-dim)]">
-            See how problems spread through the factory.
+            How problems propagate: Process → Problem → Effect → Impact
           </p>
         </div>
         <div className="flex gap-2">
-          {graph.data && <Badge tone="info">{graph.data.edges.length} connections</Badge>}
+          {graph.data && <Badge tone="info">{graph.data.nodes.length} nodes · {graph.data.edges.length} connections</Badge>}
         </div>
       </header>
 
@@ -26,7 +26,7 @@ export default function Propagation() {
         <ErrorBox message={graph.error} onRetry={graph.reload} />
       ) : graph.data ? (
         <div className="space-y-6">
-          <Card title="How Problems Spread" subtitle="Nodes and edges are drawn from this dataset's own evidence">
+          <Card title="HOW THE PROBLEM FLOWS" subtitle="Process → Problem → Effect → Impact">
             {/* The chain is derived from the graph, never a hard-coded story: an
                 uploaded dataset has no documented route, so it shows measured
                 stations and no fabricated order between them. */}
